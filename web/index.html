@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    Alternatively, build your application passing the --base-href parameter
+    specifying the new root path of your web app.
+
+    Fore more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="UniAccess">
+
+  
+
+  <meta name="robots" content="noindex" />
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png" />
+
+  <!-- Open Graph & SEO tags -->
+  <meta property="og:title" content="UniAccess" />
+  <meta property="og:description" content="Built with FlutterFlow." />
+  <meta property="og:image" content="https://storage.googleapis.com/flutterflow-prod-hosting/og_splash_gradient.png" /> 
+  <meta name="twitter:title" content="UniAccess" />
+  <meta name="twitter:description" content="Built with FlutterFlow." />
+  <meta name="twitter:image" content="https://storage.googleapis.com/flutterflow-prod-hosting/og_splash_gradient.png" />
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <title> UniAccess </title>
+  <meta name="description" content="Built with FlutterFlow." />
+    
+
+  <!-- Status Bar color in Safari browser (iOS) and PWA -->
+  <meta name="theme-color" media="(prefers-color-scheme: light)" content="#f1f4f8">
+  <meta name="theme-color" media="(prefers-color-scheme: dark)"  content="#1d2428">
+
+  <link rel="manifest" href="manifest.json">
+  
+</head>
+<body>
+  
+  
+  
+  
+  
+  <!-- Web Speech API bridge for UniAccess deaf mode -->
+  <script>
+    window.speechBridge = {
+      _recognition: null,
+      _isRunning: false,
+      _onResult: null,
+      _onError: null,
+
+      start: function(onResult, onError) {
+        var SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) {
+          onError('not_supported');
+          return;
+        }
+        this._onResult = onResult;
+        this._onError  = onError;
+        this._isRunning = true;
+        this._createAndStart(SR);
+      },
+
+      _createAndStart: function(SR) {
+        var self = this;
+        var r = new SR();
+        r.continuous      = true;
+        r.interimResults  = true;
+        r.lang            = 'ar-SA';
+        r.maxAlternatives = 1;
+
+        r.onresult = function(event) {
+          var transcript = '';
+          for (var i = 0; i < event.results.length; i++) {
+            transcript += event.results[i][0].transcript;
+          }
+          if (self._onResult) self._onResult(transcript);
+        };
+
+        r.onerror = function(event) {
+          if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
+            self._isRunning = false;
+            if (self._onError) self._onError(event.error);
+          }
+          // other errors (network, no-speech) → auto-restart
+        };
+
+        r.onend = function() {
+          // restart automatically as long as recording is active
+          if (self._isRunning && SR) {
+            setTimeout(function() {
+              if (self._isRunning) self._createAndStart(SR);
+            }, 200);
+          }
+        };
+
+        self._recognition = r;
+        r.start();
+      },
+
+      stop: function() {
+        this._isRunning = false;
+        if (this._recognition) {
+          try { this._recognition.stop(); } catch(e) {}
+          this._recognition = null;
+        }
+        this._onResult = null;
+        this._onError  = null;
+      },
+
+      isSupported: function() {
+        return !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+      }
+    };
+  </script>
+
+  <script>
+    {{flutter_bootstrap_js}}
+  </script>
+</body>
+</html>

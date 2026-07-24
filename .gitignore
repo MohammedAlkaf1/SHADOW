@@ -1,0 +1,55 @@
+# === Credentials / secrets — MUST stay out of version control ===
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+.env*
+*.jks
+*.keystore
+key.properties
+
+# === Flutter / Dart build + tooling ===
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+.pub/
+pubspec_overrides.yaml
+
+# === Logs ===
+*.log
+
+# === IDE / editor ===
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# === OS cruft ===
+.DS_Store
+Thumbs.db
+
+# === Local agent settings (contain local machine paths) ===
+.claude/settings.local.json
+
+# === Android ===
+android/.gradle/
+android/local.properties
+android/app/debug/
+android/app/profile/
+android/app/release/
+android/.kotlin/
+
+# === iOS ===
+ios/Pods/
+ios/.symlinks/
+ios/Flutter/Flutter.framework
+ios/Flutter/Flutter.podspec
+ios/Flutter/flutter_export_environment.sh
+ios/Flutter/Generated.xcconfig
+**/*.mode1v3
+**/*.mode2v3
+**/*.pbxuser
+**/*.perspectivev3
+**/xcuserdata/
