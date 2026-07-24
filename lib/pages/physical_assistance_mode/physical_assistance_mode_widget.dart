@@ -3,8 +3,10 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/custom_code/actions/index.dart' as actions;
+import '/services/app_prefs.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'physical_assistance_mode_model.dart';
 export 'physical_assistance_mode_model.dart';
 
@@ -24,10 +26,16 @@ class _PhysicalAssistanceModeWidgetState
   late PhysicalAssistanceModeModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // The student's chosen quick-contact number (local only). Null until set.
+  String? _quickContactNumber;
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => PhysicalAssistanceModeModel());
+    AppPrefs.getQuickContactNumber().then((value) {
+      if (mounted) safeSetState(() => _quickContactNumber = value);
+    });
   }
 
   @override
@@ -56,27 +64,80 @@ class _PhysicalAssistanceModeWidgetState
         command.contains('رئيسي')) {
       context.pop();
     } else if (command.contains('اتصل') || command.contains('مساعد')) {
-      _showEmergencyDialog();
+      _quickContact();
     }
   }
 
-  void _showEmergencyDialog() {
-    showDialog(
+  /// Quick contact: dial the student's saved number. If none is set yet,
+  /// prompt them to add one first. This is NOT an emergency service — it is a
+  /// student-configured number.
+  Future<void> _quickContact() async {
+    final number = _quickContactNumber;
+    if (number == null || number.isEmpty) {
+      final added = await _editQuickContactDialog();
+      if (added == null || added.isEmpty) return;
+      await _dial(added);
+      return;
+    }
+    await _dial(number);
+  }
+
+  Future<void> _dial(String number) async {
+    final uri = Uri(scheme: 'tel', path: number);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'تعذّر بدء الاتصال بالرقم $number',
+            textAlign: TextAlign.end,
+            style: GoogleFonts.cairo(),
+          ),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  /// Add or edit the quick-contact number. Returns the saved number, or null if
+  /// the student cancelled.
+  Future<String?> _editQuickContactDialog() async {
+    final controller = TextEditingController(text: _quickContactNumber ?? '');
+    final saved = await showDialog<String>(
       context: context,
       builder: (dialogContext) => AlertDialog(
         shape:
             RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
         title: Text(
-          'مساعدة طارئة',
+          'رقم الاتصال السريع',
           textAlign: TextAlign.end,
           style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 20.0),
         ),
-        content: Text(
-          'هل تريد الاتصال بالأمن الجامعي؟',
-          textAlign: TextAlign.end,
-          style: GoogleFonts.cairo(fontSize: 16.0),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              'أدخل رقم الشخص الذي تريد الاتصال به بسرعة (مثل مرافق أو أحد أفراد العائلة). يُحفظ على جهازك فقط.',
+              textAlign: TextAlign.end,
+              style: GoogleFonts.cairo(fontSize: 14.0),
+            ),
+            const SizedBox(height: 16.0),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.phone,
+              textAlign: TextAlign.end,
+              autofocus: true,
+              style: GoogleFonts.cairo(),
+              decoration: InputDecoration(
+                hintText: '05xxxxxxxx',
+                hintStyle: GoogleFonts.cairo(),
+                border: const OutlineInputBorder(),
+              ),
+            ),
+          ],
         ),
-        actionsAlignment: MainAxisAlignment.start,
+        actionsAlignment: MainAxisAlignment.spaceBetween,
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogContext),
@@ -84,18 +145,31 @@ class _PhysicalAssistanceModeWidgetState
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+              backgroundColor: FlutterFlowTheme.of(context).primary,
+              foregroundColor: FlutterFlowTheme.of(context).onPrimary,
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12.0)),
             ),
-            onPressed: () => Navigator.pop(dialogContext),
-            child:
-                Text('اتصال', style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
+            onPressed: () {
+              final value = controller.text.trim();
+              if (value.isEmpty) {
+                Navigator.pop(dialogContext);
+                return;
+              }
+              Navigator.pop(dialogContext, value);
+            },
+            child: Text('حفظ',
+                style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
     );
+
+    if (saved != null && saved.isNotEmpty) {
+      await AppPrefs.setQuickContactNumber(saved);
+      if (mounted) safeSetState(() => _quickContactNumber = saved);
+    }
+    return saved;
   }
 
   @override
@@ -105,21 +179,30 @@ class _PhysicalAssistanceModeWidgetState
       (label: 'افتح وضع البصرية', icon: Icons.visibility_rounded),
       (label: 'افتح وضع التعلم', icon: Icons.psychology_rounded),
       (label: 'ارجع للرئيسية', icon: Icons.home_rounded),
-      (label: 'اتصل بالمساعد', icon: Icons.phone_rounded),
+      (label: 'اتصل بجهة الاتصال السريع', icon: Icons.phone_rounded),
     ];
 
     return Scaffold(
       key: scaffoldKey,
       backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
       floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showEmergencyDialog,
-        backgroundColor: FlutterFlowTheme.of(context).error,
-        icon: const Icon(Icons.emergency_share_rounded, color: Colors.white),
-        label: Text(
-          '🆘 مساعدة طارئة',
-          style:
-              GoogleFonts.cairo(color: Colors.white, fontWeight: FontWeight.bold),
+      floatingActionButton: a11yButton(
+        label: 'اتصال سريع',
+        hint: _quickContactNumber == null
+            ? 'لم يتم تعيين رقم بعد، اضغط للإضافة'
+            : 'اتصال بالرقم المحفوظ',
+        child: FloatingActionButton.extended(
+          onPressed: _quickContact,
+          backgroundColor: FlutterFlowTheme.of(context).primary,
+          foregroundColor: FlutterFlowTheme.of(context).onPrimary,
+          icon: Icon(Icons.phone_rounded,
+              color: FlutterFlowTheme.of(context).onPrimary),
+          label: Text(
+            'اتصال سريع',
+            style: GoogleFonts.cairo(
+                color: FlutterFlowTheme.of(context).onPrimary,
+                fontWeight: FontWeight.bold),
+          ),
         ),
       ),
       body: Column(
@@ -166,6 +249,20 @@ class _PhysicalAssistanceModeWidgetState
                                 fontWeight: FontWeight.bold,
                                 lineHeight: 1.4,
                               ),
+                        ),
+                      ),
+                      a11yButton(
+                        label: 'تعيين رقم الاتصال السريع',
+                        child: FlutterFlowIconButton(
+                          borderRadius: 8.0,
+                          buttonSize: 48.0,
+                          fillColor: Colors.transparent,
+                          icon: Icon(
+                            Icons.contact_phone_outlined,
+                            color: FlutterFlowTheme.of(context).secondaryText,
+                            size: 24.0,
+                          ),
+                          onPressed: _editQuickContactDialog,
                         ),
                       ),
                     ].divide(SizedBox(width: 20.0)),
