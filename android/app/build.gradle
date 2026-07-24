@@ -2,7 +2,12 @@ plugins {
    id "com.android.application"
    id "kotlin-android"
    id "dev.flutter.flutter-gradle-plugin"
-   id "com.google.gms.google-services"  // Google Services plugin
+   // TEMP-UNBLOCK (2026-07-25): google-services disabled so the Android build
+   // does not fail at :app:processDebugGoogleServices on the stale package name
+   // (com.mycompany.uniaccess) in google-services.json. Firebase is unused by
+   // app code (see docs/AUDIT.md). TO RESTORE: uncomment the line below AND
+   // regenerate google-services.json for package sa.isleaders.shadow.
+   // id "com.google.gms.google-services"  // Google Services plugin
 
 }
 
