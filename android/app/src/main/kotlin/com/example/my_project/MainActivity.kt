@@ -1,4 +1,4 @@
-package com.mycompany.uniaccess
+package sa.isleaders.shadow
 
 import io.flutter.embedding.android.FlutterActivity
 
