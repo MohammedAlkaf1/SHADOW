@@ -4,6 +4,14 @@
 
 Last rewritten: 2026-07-24, after a full code audit (see `docs/AUDIT.md` — read it before your first change).
 
+**Product scope:** this repo is the **Flutter app only** — Phase 1 of a larger
+product. The university platform (auth, intake, specialist review, support plans,
+dashboards, multi-tenancy) is **Phase 2+ and lives in a SEPARATE repository** —
+do not scaffold it here. Full plan, decisions, and the held Phase 2 kickoff prompt
+are in `docs/ROADMAP.md`. Architectural boundary to honour now: the AI features
+(Deepgram, GPT-4o) process only academic content the student chooses (lecture
+audio, slides, PDFs) — **never** medical reports or disability records.
+
 ---
 
 ## WHAT THIS REPO ACTUALLY IS
