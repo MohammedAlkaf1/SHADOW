@@ -1,12 +1,16 @@
 rules_version = '2';
 service firebase.storage {
   match /b/{bucket}/o {
+
+    // SECURITY: Deny all access.
+    //
+    // Verified 2026-07-24 (see docs/AUDIT.md): no application code uses Firebase
+    // Storage. The previous rules exposed /users/{userId}/** with
+    // "allow read: if true" — public read of any user's files. Closing
+    // everything now breaks nothing. When Storage is actually used, replace
+    // this with authenticated, per-user rules — do NOT reopen with "if true".
     match /{allPaths=**} {
       allow read, write: if false;
-    }
-    match /users/{userId}/{allPaths=**} {
-      allow read: if true;
-      allow write: if request.auth.uid == userId;
     }
   }
 }
