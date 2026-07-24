@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 
 import 'dart:async';
 import 'package:record/record.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/io.dart';
 
 import '/services/deepgram_parser.dart';
 
@@ -26,11 +26,15 @@ Future<String> listenForVoiceCommand() async {
   final uri = Uri.parse(
     'wss://api.deepgram.com/v1/listen'
     '?encoding=linear16&sample_rate=16000&channels=1'
-    '&language=ar&model=nova-2&smart_format=true&interim_results=true'
-    '&token=$_cmdApiKey',
+    '&language=ar&model=nova-2&smart_format=true&interim_results=true',
   );
 
-  final channel = WebSocketChannel.connect(uri);
+  // Auth via the Authorization header (Deepgram's supported method); the
+  // ?token= query parameter is not honoured and returns 401.
+  final channel = IOWebSocketChannel.connect(
+    uri,
+    headers: {'Authorization': 'Token $_cmdApiKey'},
+  );
 
   channel.stream.listen(
     (message) {

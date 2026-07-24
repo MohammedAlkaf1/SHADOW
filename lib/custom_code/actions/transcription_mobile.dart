@@ -57,12 +57,17 @@ Future<void> _startDeepgramStream() async {
   final uri = Uri.parse(
     'wss://api.deepgram.com/v1/listen'
     '?encoding=linear16&sample_rate=16000&channels=1'
-    '&language=ar&model=nova-2&smart_format=true&interim_results=true'
-    '&token=$_apiKey',
+    '&language=ar&model=nova-2&smart_format=true&interim_results=true',
   );
 
   debugPrint('🔌 WebSocket connecting to: ${uri.host}');
-  _channel = IOWebSocketChannel.connect(uri);
+  // Auth via the Authorization header (Deepgram's supported method). The
+  // previous ?token= query parameter is NOT honoured by /v1/listen and caused
+  // a 401 at the handshake.
+  _channel = IOWebSocketChannel.connect(
+    uri,
+    headers: {'Authorization': 'Token $_apiKey'},
+  );
   debugPrint('✅ WebSocket connected (channel created)');
 
   _channel!.stream.listen(
