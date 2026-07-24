@@ -1,3 +1,4 @@
+import '/a11y.dart';
 import '/components/disability_card/disability_card_widget.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -129,7 +130,8 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: InkWell(
+                            child: a11yButton(
+                              child: InkWell(
                               splashColor: Colors.transparent,
                               focusColor: Colors.transparent,
                               hoverColor: Colors.transparent,
@@ -150,11 +152,13 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                                   description: 'ترجمة فورية للمحاضرات',
                                 ),
                               ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16.0),
                           Expanded(
-                            child: InkWell(
+                            child: a11yButton(
+                              child: InkWell(
                               splashColor: Colors.transparent,
                               focusColor: Colors.transparent,
                               hoverColor: Colors.transparent,
@@ -175,6 +179,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                                   description: 'وصف المحيط والنصوص',
                                 ),
                               ),
+                              ),
                             ),
                           ),
                         ],
@@ -188,7 +193,8 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
                           Expanded(
-                            child: InkWell(
+                            child: a11yButton(
+                              child: InkWell(
                               splashColor: Colors.transparent,
                               focusColor: Colors.transparent,
                               hoverColor: Colors.transparent,
@@ -209,11 +215,13 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                                   description: 'تبسيط المواد الدراسية',
                                 ),
                               ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 16.0),
                           Expanded(
-                            child: InkWell(
+                            child: a11yButton(
+                              child: InkWell(
                               splashColor: Colors.transparent,
                               focusColor: Colors.transparent,
                               hoverColor: Colors.transparent,
@@ -234,6 +242,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                                   label: 'إعاقة حركية',
                                   description: 'التحكم بالصوت',
                                 ),
+                              ),
                               ),
                             ),
                           ),

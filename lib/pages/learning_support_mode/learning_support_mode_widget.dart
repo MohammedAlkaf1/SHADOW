@@ -1,3 +1,4 @@
+import '/a11y.dart';
 import '/components/button/button_widget.dart';
 import '/components/mode_header/mode_header_widget.dart';
 import '/components/slider/slider_widget.dart';
@@ -107,7 +108,9 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // Header
-            InkWell(
+            a11yButton(
+              label: 'رجوع',
+              child: InkWell(
               splashColor: Colors.transparent,
               focusColor: Colors.transparent,
               hoverColor: Colors.transparent,
@@ -126,6 +129,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                   title: 'دعم التعلم',
                 ),
               ),
+            ),
             ),
             // Scrollable content
             Expanded(
@@ -173,7 +177,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                       lineHeight: 1.4,
                                     ),
                               ),
-                              InkWell(
+                              a11yButton(
+                                child: InkWell(
                                 splashColor: Colors.transparent,
                                 focusColor: Colors.transparent,
                                 hoverColor: Colors.transparent,
@@ -193,6 +198,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                     disabled: false,
                                   ),
                                 ),
+                              ),
                               ),
                             ].divide(SizedBox(height: 20.0)),
                           ),
@@ -407,7 +413,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                       ],
                                     ),
                                     SizedBox(height: 12.0),
-                                    Text(
+                                    a11yLive(Text(
                                       _model.aiResult!,
                                       textAlign: TextAlign.end,
                                       style: FlutterFlowTheme.of(context)
@@ -422,7 +428,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                             letterSpacing: 0.0,
                                             lineHeight: 1.6,
                                           ),
-                                    ),
+                                    )),
                                   ],
                                 ),
                               ),
@@ -544,7 +550,9 @@ class _AiActionButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GestureDetector(
+      child: a11yButton(
+        enabled: !isLoading,
+        child: GestureDetector(
         onTap: isLoading ? null : onTap,
         child: Opacity(
           opacity: isLoading ? 0.5 : 1.0,
@@ -583,6 +591,7 @@ class _AiActionButton extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

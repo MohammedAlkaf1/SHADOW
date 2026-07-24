@@ -1,3 +1,4 @@
+import '/a11y.dart';
 import '/components/status_badge/status_badge_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -184,9 +185,11 @@ class _DeafModeTranscriptionWidgetState
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        FlutterFlowIconButton(
+                        a11yButton(
+                          label: 'رجوع',
+                          child: FlutterFlowIconButton(
                           borderRadius: 8.0,
-                          buttonSize: 40.0,
+                          buttonSize: 48.0,
                           fillColor: Colors.transparent,
                           icon: Icon(
                             Icons.arrow_back_ios_rounded,
@@ -196,6 +199,7 @@ class _DeafModeTranscriptionWidgetState
                           onPressed: () async {
                             context.pop();
                           },
+                        ),
                         ),
                         Expanded(
                           flex: 1,
@@ -213,9 +217,11 @@ class _DeafModeTranscriptionWidgetState
                                 ),
                           ),
                         ),
-                        FlutterFlowIconButton(
+                        a11yButton(
+                          label: 'الإعدادات',
+                          child: FlutterFlowIconButton(
                           borderRadius: 8.0,
-                          buttonSize: 40.0,
+                          buttonSize: 48.0,
                           fillColor: Colors.transparent,
                           icon: Icon(
                             Icons.settings_rounded,
@@ -223,6 +229,7 @@ class _DeafModeTranscriptionWidgetState
                             size: 24.0,
                           ),
                           onPressed: _showSettingsDialog,
+                        ),
                         ),
                       ].divide(SizedBox(width: 20.0)),
                     ),
@@ -395,7 +402,11 @@ class _DeafModeTranscriptionWidgetState
                                     : 1.0;
                                 return Opacity(opacity: opacity, child: child);
                               },
-                              child: InkWell(
+                              child: a11yButton(
+                                label: FFAppState().isRecording
+                                    ? 'إيقاف التسجيل'
+                                    : 'بدء التسجيل',
+                                child: InkWell(
                                 splashColor: Colors.transparent,
                                 focusColor: Colors.transparent,
                                 hoverColor: Colors.transparent,
@@ -451,6 +462,7 @@ class _DeafModeTranscriptionWidgetState
                                     ),
                                   ),
                                 ),
+                              ),
                               ),
                             ),
                             Text(
@@ -536,13 +548,14 @@ class _BottomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return a11yButton(
+        child: Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         FlutterFlowIconButton(
           borderRadius: 24.0,
-          buttonSize: 40.0,
+          buttonSize: 48.0,
           fillColor: FlutterFlowTheme.of(context).surfaceVariant,
           icon: Icon(
             icon,
@@ -562,6 +575,6 @@ class _BottomButton extends StatelessWidget {
               ),
         ),
       ],
-    );
+    ));
   }
 }

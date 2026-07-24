@@ -1,3 +1,4 @@
+import '/a11y.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -138,9 +139,11 @@ class _PhysicalAssistanceModeWidgetState
                       EdgeInsetsDirectional.fromSTEB(32.0, 20.0, 32.0, 20.0),
                   child: Row(
                     children: [
-                      FlutterFlowIconButton(
+                      a11yButton(
+                        label: 'رجوع',
+                        child: FlutterFlowIconButton(
                         borderRadius: 8.0,
-                        buttonSize: 40.0,
+                        buttonSize: 48.0,
                         fillColor: Colors.transparent,
                         icon: Icon(
                           Icons.arrow_forward_ios_rounded,
@@ -148,6 +151,7 @@ class _PhysicalAssistanceModeWidgetState
                           size: 24.0,
                         ),
                         onPressed: () => context.pop(),
+                      ),
                       ),
                       Expanded(
                         child: Text(
@@ -199,7 +203,7 @@ class _PhysicalAssistanceModeWidgetState
                         width: 2.0,
                       ),
                     ),
-                    child: Text(
+                    child: a11yLive(Text(
                       _model.isListeningForCommand
                           ? '🎙 جارٍ الاستماع...'
                           : (_model.lastVoiceCommand ??
@@ -217,11 +221,16 @@ class _PhysicalAssistanceModeWidgetState
                             letterSpacing: 0.0,
                             lineHeight: 1.4,
                           ),
-                    ),
+                    )),
                   ),
                   SizedBox(height: 40.0),
                   // Big mic button
-                  GestureDetector(
+                  a11yButton(
+                    label: _model.isListeningForCommand
+                        ? 'جارٍ الاستماع'
+                        : 'اضغط وتكلم لإعطاء أمر صوتي',
+                    enabled: !_model.isListeningForCommand,
+                    child: GestureDetector(
                     onTap: _model.isListeningForCommand
                         ? null
                         : _handleVoiceCommand,
@@ -265,6 +274,7 @@ class _PhysicalAssistanceModeWidgetState
                               size: 64.0,
                             ),
                     ),
+                  ),
                   ),
                   SizedBox(height: 16.0),
                   Text(

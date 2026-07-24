@@ -1,3 +1,4 @@
+import '/a11y.dart';
 import '/components/feature_button/feature_button_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -112,9 +113,11 @@ class _VisualAssistanceModeWidgetState
                       mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        FlutterFlowIconButton(
+                        a11yButton(
+                          label: 'رجوع',
+                          child: FlutterFlowIconButton(
                           borderRadius: 8.0,
-                          buttonSize: 40.0,
+                          buttonSize: 48.0,
                           fillColor: Colors.transparent,
                           icon: Icon(
                             Icons.arrow_back_rounded,
@@ -124,6 +127,7 @@ class _VisualAssistanceModeWidgetState
                           onPressed: () async {
                             context.pop();
                           },
+                        ),
                         ),
                         Expanded(
                           flex: 1,
@@ -382,7 +386,7 @@ class _VisualAssistanceModeWidgetState
                                   ],
                                 ),
                                 SizedBox(height: 12.0),
-                                Text(
+                                a11yLive(Text(
                                   _model.analysisResult!,
                                   textAlign: TextAlign.end,
                                   style: FlutterFlowTheme.of(context)
@@ -392,18 +396,20 @@ class _VisualAssistanceModeWidgetState
                                         letterSpacing: 0.0,
                                         lineHeight: 1.6,
                                       ),
-                                ),
+                                )),
                                 SizedBox(height: 12.0),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.end,
                                   children: [
-                                    GestureDetector(
+                                    a11yButton(
+                                      enabled: !_model.isAnalyzing,
+                                      child: GestureDetector(
                                       onTap: _model.isSpeaking
                                           ? _stopSpeaking
                                           : _speakResult,
                                       child: Container(
                                         padding: EdgeInsets.symmetric(
-                                            horizontal: 16.0, vertical: 8.0),
+                                            horizontal: 16.0, vertical: 14.0),
                                         decoration: BoxDecoration(
                                           color: _model.isSpeaking
                                               ? FlutterFlowTheme.of(context)
@@ -449,6 +455,7 @@ class _VisualAssistanceModeWidgetState
                                         ),
                                       ),
                                     ),
+                                    ),
                                   ],
                                 ),
                               ],
@@ -470,7 +477,9 @@ class _VisualAssistanceModeWidgetState
                             children: [
                               Expanded(
                                 flex: 1,
-                                child: GestureDetector(
+                                child: a11yButton(
+                                  enabled: !_model.isAnalyzing,
+                                  child: GestureDetector(
                                   onTap: _model.isAnalyzing
                                       ? null
                                       : () => _captureAndAnalyze('describe'),
@@ -494,10 +503,13 @@ class _VisualAssistanceModeWidgetState
                                     ),
                                   ),
                                 ),
+                                ),
                               ),
                               Expanded(
                                 flex: 1,
-                                child: GestureDetector(
+                                child: a11yButton(
+                                  enabled: !_model.isAnalyzing,
+                                  child: GestureDetector(
                                   onTap: _model.isAnalyzing
                                       ? null
                                       : () =>
@@ -521,6 +533,7 @@ class _VisualAssistanceModeWidgetState
                                       ),
                                     ),
                                   ),
+                                ),
                                 ),
                               ),
                             ].divide(SizedBox(width: 32.0)),
