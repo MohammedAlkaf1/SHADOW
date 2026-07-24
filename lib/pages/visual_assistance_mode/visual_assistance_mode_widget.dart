@@ -1,4 +1,5 @@
 import '/a11y.dart';
+import '/pages/consent/consent_screen.dart';
 import '/components/feature_button/feature_button_widget.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
@@ -43,6 +44,8 @@ class _VisualAssistanceModeWidgetState
   }
 
   Future<void> _captureAndAnalyze(String mode) async {
+    if (!await ensureAiConsent(context)) return;
+    if (!mounted) return;
     final XFile? file = await _imagePicker.pickImage(
       source: ImageSource.camera,
       imageQuality: 85,

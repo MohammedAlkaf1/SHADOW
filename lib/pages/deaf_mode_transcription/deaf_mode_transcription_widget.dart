@@ -7,6 +7,7 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:math';
 import 'dart:ui';
 import '/custom_code/actions/index.dart' as actions;
+import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
 import '/services/transcript_store.dart';
 import 'saved_transcripts_page.dart';
@@ -474,6 +475,10 @@ class _DeafModeTranscriptionWidgetState
                                 hoverColor: Colors.transparent,
                                 highlightColor: Colors.transparent,
                                 onTap: () async {
+                                  // Gate consent only when starting (not stopping).
+                                  if (!FFAppState().isRecording) {
+                                    if (!await ensureAiConsent(context)) return;
+                                  }
                                   await actions.startRealtimeTranscription();
                                   safeSetState(() {});
                                 },

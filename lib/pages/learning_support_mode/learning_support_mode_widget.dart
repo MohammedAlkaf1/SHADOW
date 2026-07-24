@@ -1,4 +1,5 @@
 import '/a11y.dart';
+import '/pages/consent/consent_screen.dart';
 import '/components/button/button_widget.dart';
 import '/components/mode_header/mode_header_widget.dart';
 import '/components/slider/slider_widget.dart';
@@ -60,6 +61,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   }
 
   Future<void> _processDocument(String mode) async {
+    if (!await ensureAiConsent(context)) return;
+    if (!mounted) return;
     if (_model.pdfFileBytes == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(

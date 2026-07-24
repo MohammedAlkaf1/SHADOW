@@ -1,5 +1,7 @@
 import '/a11y.dart';
 import '/components/disability_card/disability_card_widget.dart';
+import '/pages/consent/consent_screen.dart';
+import '/services/app_prefs.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -27,6 +29,13 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
   void initState() {
     super.initState();
     _model = createModel(context, () => WelcomeSelectionModel());
+    // First run: show the AI privacy consent once.
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final consent = await AppPrefs.getAiConsent();
+      if (consent == null && mounted) {
+        await showAiConsent(context);
+      }
+    });
   }
 
   @override

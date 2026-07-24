@@ -10,6 +10,7 @@ class AppPrefs {
 
   static const _kQuickContact = 'quick_contact_number';
   static const _kRetentionDays = 'transcript_retention_days';
+  static const _kAiConsent = 'ai_consent';
 
   /// Default retention for saved transcripts (minimal by design).
   static const int defaultRetentionDays = 30;
@@ -25,6 +26,19 @@ class AppPrefs {
 
   static Future<void> setRetentionDays(int days) async {
     await (await _prefs).setInt(_kRetentionDays, days);
+  }
+
+  // ── AI consent (first-run) ──────────────────────────────────────────────
+
+  /// Whether the student has consented to using the third-party AI services.
+  /// Returns null if they have not been asked yet, true if accepted, false if
+  /// declined.
+  static Future<bool?> getAiConsent() async {
+    return (await _prefs).getBool(_kAiConsent);
+  }
+
+  static Future<void> setAiConsent(bool accepted) async {
+    await (await _prefs).setBool(_kAiConsent, accepted);
   }
 
   // ── Quick contact (اتصال سريع) ──────────────────────────────────────────
