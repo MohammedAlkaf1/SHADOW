@@ -9,9 +9,23 @@ class AppPrefs {
   AppPrefs._();
 
   static const _kQuickContact = 'quick_contact_number';
+  static const _kRetentionDays = 'transcript_retention_days';
+
+  /// Default retention for saved transcripts (minimal by design).
+  static const int defaultRetentionDays = 30;
 
   static Future<SharedPreferences> get _prefs =>
       SharedPreferences.getInstance();
+
+  // ── Transcript retention (days) ─────────────────────────────────────────
+
+  static Future<int> getRetentionDays() async {
+    return (await _prefs).getInt(_kRetentionDays) ?? defaultRetentionDays;
+  }
+
+  static Future<void> setRetentionDays(int days) async {
+    await (await _prefs).setInt(_kRetentionDays, days);
+  }
 
   // ── Quick contact (اتصال سريع) ──────────────────────────────────────────
 

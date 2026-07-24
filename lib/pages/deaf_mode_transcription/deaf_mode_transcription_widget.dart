@@ -7,7 +7,11 @@ import '/flutter_flow/flutter_flow_widgets.dart';
 import 'dart:math';
 import 'dart:ui';
 import '/custom_code/actions/index.dart' as actions;
+import '/services/app_prefs.dart';
+import '/services/transcript_store.dart';
+import 'saved_transcripts_page.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'deaf_mode_transcription_model.dart';
@@ -40,6 +44,9 @@ class _DeafModeTranscriptionWidgetState
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat();
+    // Enforce transcript retention (auto-expiry) on entry.
+    AppPrefs.getRetentionDays()
+        .then((days) => TranscriptStore.instance.purgeExpired(days));
   }
 
   @override
@@ -47,6 +54,47 @@ class _DeafModeTranscriptionWidgetState
     _animController.dispose();
     _model.dispose();
     super.dispose();
+  }
+
+  String get _currentText => FFAppState().liveText.isNotEmpty
+      ? FFAppState().liveText
+      : (_model.liveText ?? '');
+
+  Future<void> _saveTranscript() async {
+    final text = _currentText.trim();
+    if (text.isEmpty) {
+      _snack('لا يوجد نص لحفظه');
+      return;
+    }
+    await TranscriptStore.instance.save(text);
+    _snack('تم حفظ النص');
+  }
+
+  void _copyTranscript() {
+    final text = _currentText.trim();
+    if (text.isEmpty) {
+      _snack('لا يوجد نص لنسخه');
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: text));
+    _snack('تم نسخ النص');
+  }
+
+  void _openSaved() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const SavedTranscriptsPage()),
+    );
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            textAlign: TextAlign.end, style: GoogleFonts.cairo()),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   void _showSettingsDialog() {
@@ -215,6 +263,20 @@ class _DeafModeTranscriptionWidgetState
                                   fontWeight: FontWeight.bold,
                                   lineHeight: 1.4,
                                 ),
+                          ),
+                        ),
+                        a11yButton(
+                          label: 'النصوص المحفوظة',
+                          child: FlutterFlowIconButton(
+                            borderRadius: 8.0,
+                            buttonSize: 48.0,
+                            fillColor: Colors.transparent,
+                            icon: Icon(
+                              Icons.history_rounded,
+                              color: FlutterFlowTheme.of(context).secondaryText,
+                              size: 24.0,
+                            ),
+                            onPressed: _openSaved,
                           ),
                         ),
                         a11yButton(
@@ -497,7 +559,7 @@ class _DeafModeTranscriptionWidgetState
                               _BottomButton(
                                 icon: Icons.save_alt_rounded,
                                 label: 'حفظ',
-                                onPressed: () {},
+                                onPressed: _saveTranscript,
                               ),
                               _BottomButton(
                                 icon: Icons.delete_outline_rounded,
@@ -515,7 +577,7 @@ class _DeafModeTranscriptionWidgetState
                               _BottomButton(
                                 icon: Icons.content_copy_rounded,
                                 label: 'نسخ',
-                                onPressed: () {},
+                                onPressed: _copyTranscript,
                               ),
                             ],
                           ),
