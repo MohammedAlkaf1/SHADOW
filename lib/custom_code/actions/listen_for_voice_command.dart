@@ -8,9 +8,10 @@ import 'package:flutter/material.dart';
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:record/record.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+
+import '/services/deepgram_parser.dart';
 
 const String _cmdApiKey = String.fromEnvironment('DEEPGRAM_API_KEY');
 
@@ -33,18 +34,12 @@ Future<String> listenForVoiceCommand() async {
 
   channel.stream.listen(
     (message) {
-      try {
-        final data = jsonDecode(message as String) as Map<String, dynamic>;
-        final transcript = (data['channel']?['alternatives'] as List?)
-            ?.firstOrNull?['transcript'] as String?;
-        final isFinal = data['is_final'] as bool? ?? false;
-        if (transcript != null && transcript.isNotEmpty) {
-          lastResult = transcript;
-          if (isFinal && !completer.isCompleted) {
-            completer.complete(transcript);
-          }
-        }
-      } catch (_) {}
+      final result = parseDeepgramMessage(message as String);
+      if (result == null || !result.hasText) return;
+      lastResult = result.transcript!;
+      if (result.isFinal && !completer.isCompleted) {
+        completer.complete(result.transcript);
+      }
     },
     onDone: () {
       if (!completer.isCompleted) completer.complete(lastResult);

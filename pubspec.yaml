@@ -101,12 +101,19 @@ dependencies:
 dependency_overrides:
   http: 1.4.0
   uuid: ^4.0.0
+  # Test-only: sqflite_common_ffi 2.3.5 (dev dep) is incompatible with sqlite3
+  # 3.x. sqlite3 is only used by the desktop test VM, never in the app (which
+  # uses the sqflite Android plugin), so pin it below 3.0 for tests.
+  sqlite3: ">=2.4.0 <3.0.0"
 
 dev_dependencies:
   flutter_lints: 4.0.0
   lints: 4.0.0
   flutter_test:
     sdk: flutter
+  # Dev/test only (does not ship in the app): lets sqflite run on the desktop VM
+  # so transcript-store logic can be unit-tested without a device.
+  sqflite_common_ffi: ^2.3.3
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

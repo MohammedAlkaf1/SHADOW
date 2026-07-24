@@ -2,10 +2,11 @@
 // Only compiled when targeting Android/iOS (dart.library.io is available).
 
 import 'dart:async';
-import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:web_socket_channel/io.dart';
+
+import '/services/deepgram_parser.dart';
 
 const String _apiKey = String.fromEnvironment('DEEPGRAM_API_KEY');
 
@@ -13,13 +14,13 @@ AudioRecorder? _recorder;
 IOWebSocketChannel? _channel;
 bool _shouldRestart = false;
 void Function(String)? _onTranscript;
-final StringBuffer _buffer = StringBuffer();
+final TranscriptAccumulator _accumulator = TranscriptAccumulator();
 
 Future<void> startPlatformTranscription(
     void Function(String text) onTranscript) async {
   _onTranscript = onTranscript;
   _shouldRestart = true;
-  _buffer.clear();
+  _accumulator.clear();
 
   debugPrint('🔑 Key exists: ${_apiKey.isNotEmpty}');
   if (_apiKey.isNotEmpty) {
@@ -67,31 +68,21 @@ Future<void> _startDeepgramStream() async {
   _channel!.stream.listen(
     (message) {
       debugPrint('📨 Message: $message');
-      try {
-        final data = jsonDecode(message as String) as Map<String, dynamic>;
-
-        if (data.containsKey('message')) {
-          debugPrint('⚠️ Deepgram server msg: ${data['message']} | code: ${data['code']}');
-        }
-
-        final transcript = (data['channel']?['alternatives'] as List?)
-            ?.firstOrNull?['transcript'] as String?;
-        final isFinal = data['is_final'] as bool? ?? false;
-
-        debugPrint('📝 Transcript: "$transcript" | final=$isFinal');
-
-        if (transcript != null && transcript.isNotEmpty) {
-          if (isFinal) {
-            _buffer.write(transcript);
-            _buffer.write(' ');
-            debugPrint('💾 State updated: ${_buffer.toString().trim()}');
-            _onTranscript?.call(_buffer.toString().trim());
-          } else {
-            _onTranscript?.call('${_buffer.toString()}$transcript'.trim());
-          }
-        }
-      } catch (e) {
-        debugPrint('❌ JSON parse error: $e');
+      final result = parseDeepgramMessage(message as String);
+      if (result == null) {
+        debugPrint('❌ Unparseable frame');
+        return;
+      }
+      if (result.serverMessage != null) {
+        debugPrint('⚠️ Deepgram server msg: ${result.serverMessage}');
+        return;
+      }
+      debugPrint(
+          '📝 Transcript: "${result.transcript}" | final=${result.isFinal}');
+      if (result.hasText) {
+        final display = _accumulator.add(result.transcript, result.isFinal);
+        debugPrint('💾 State updated: $display');
+        _onTranscript?.call(display);
       }
     },
     onDone: () {
@@ -164,7 +155,7 @@ void stopPlatformTranscription() {
   try { _channel?.sink.close(); } catch (_) {}
   _channel = null;
   _onTranscript = null;
-  _buffer.clear();
+  _accumulator.clear();
 }
 
 bool get isPlatformSupported => true;

@@ -4,6 +4,7 @@
 // backend. Records auto-expire after a user-configurable retention period
 // (see AppPrefs.getRetentionDays), and the student can delete any or all of them.
 
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 
 class Transcript {
@@ -25,31 +26,49 @@ class Transcript {
 }
 
 class TranscriptStore {
-  TranscriptStore._();
-  static final TranscriptStore instance = TranscriptStore._();
+  /// The app uses [instance]. Tests construct their own with an in-memory
+  /// sqflite-ffi factory and path (databaseFactory/databasePath injected).
+  TranscriptStore({DatabaseFactory? databaseFactory, String? databasePath})
+      : _factory = databaseFactory,
+        _path = databasePath;
+
+  static final TranscriptStore instance = TranscriptStore();
 
   static const _dbName = 'shadow_transcripts.db';
   static const _table = 'transcripts';
+
+  final DatabaseFactory? _factory;
+  final String? _path;
 
   Database? _db;
 
   Future<Database> get _database async {
     if (_db != null) return _db!;
-    final dir = await getDatabasesPath();
-    _db = await openDatabase(
-      '$dir/$_dbName',
-      version: 1,
-      onCreate: (db, version) async {
-        await db.execute('''
+    // Default to the platform factory (set by the sqflite plugin on device).
+    final factory = _factory ?? databaseFactory;
+    final path = _path ?? '${await getDatabasesPath()}/$_dbName';
+    _db = await factory.openDatabase(
+      path,
+      options: OpenDatabaseOptions(
+        version: 1,
+        onCreate: (db, version) async {
+          await db.execute('''
           CREATE TABLE $_table (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             text TEXT NOT NULL,
             created_at INTEGER NOT NULL
           )
         ''');
-      },
+        },
+      ),
     );
     return _db!;
+  }
+
+  /// Closes the underlying database (used by tests for isolation).
+  Future<void> close() async {
+    await _db?.close();
+    _db = null;
   }
 
   /// Saves a transcript. Returns its new id. Empty text is ignored (returns -1).
@@ -60,6 +79,17 @@ class TranscriptStore {
     return db.insert(_table, {
       'text': trimmed,
       'created_at': DateTime.now().millisecondsSinceEpoch,
+    });
+  }
+
+  /// Test-only: insert a transcript with an explicit timestamp, so retention/
+  /// expiry can be exercised deterministically.
+  @visibleForTesting
+  Future<int> saveAt(String text, DateTime createdAt) async {
+    final db = await _database;
+    return db.insert(_table, {
+      'text': text.trim(),
+      'created_at': createdAt.millisecondsSinceEpoch,
     });
   }
 
