@@ -18,4 +18,15 @@ There are currently **zero** `Semantics` / `semanticLabel` across `lib/pages/` a
 
 ---
 
+## Deliberately skipped (not oversights)
+
+### Orient / read-back step
+On 2026-07-24 the owner **deliberately skipped** the "orient / read-back" step
+(where the agent restates its understanding of the repo before acting), because
+prior work in the session had already demonstrated that understanding. This was
+a conscious decision, not an omission — recorded here so it is not later mistaken
+for a missed step.
+
+---
+
 _Backlog only — do not action items here without them being scheduled into the working order in `AGENTS.md`._
