@@ -43,14 +43,27 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   }
 
   Future<void> _pickPdfFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['pdf'],
-      withData: true,
-    );
-    if (result == null) return;
+    FilePickerResult? result;
+    try {
+      result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        withData: true, // load bytes so cloud files (no local path) still work
+      );
+    } catch (e) {
+      // Cloud-backed files (e.g. OneDrive) can throw PlatformException
+      // (unknown_path). Don't crash — tell the user to pick a local file.
+      debugPrint('file_picker failed: $e');
+      _showPickError();
+      return;
+    }
+    if (result == null) return; // user cancelled
 
     final file = result.files.single;
+    if (file.bytes == null) {
+      _showPickError();
+      return;
+    }
     safeSetState(() {
       _model.pdfFilePath = null;
       _model.pdfFileBytes = file.bytes;
@@ -58,6 +71,20 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
       _model.aiResult = null;
       _model.extractedText = null;
     });
+  }
+
+  void _showPickError() {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          'تعذّر فتح الملف. يرجى اختيار ملف PDF محفوظ على الجهاز (وليس من التخزين السحابي مثل OneDrive).',
+          textAlign: TextAlign.end,
+          style: GoogleFonts.cairo(),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
   }
 
   Future<void> _processDocument(String mode) async {
