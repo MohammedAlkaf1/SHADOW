@@ -64,7 +64,9 @@ class _FeatureButtonWidgetState extends State<FeatureButtonWidget> {
             ),
           ),
           child: Padding(
-            padding: EdgeInsets.all(40.0),
+            // Reduced vertical padding: 40 all-around overflowed the fixed
+            // 180px height (icon 64 + gap + text > 100px of inner space).
+            padding: EdgeInsets.symmetric(horizontal: 40.0, vertical: 20.0),
             child: Container(
               child: Container(
                 alignment: AlignmentDirectional(0.0, 0.0),
@@ -107,7 +109,7 @@ class _FeatureButtonWidgetState extends State<FeatureButtonWidget> {
                             lineHeight: 1.4,
                           ),
                     ),
-                  ].divide(SizedBox(height: 20.0)),
+                  ].divide(SizedBox(height: 12.0)),
                 ),
               ),
             ),
