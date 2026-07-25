@@ -57,7 +57,11 @@ Future<void> _startDeepgramStream() async {
   final uri = Uri.parse(
     'wss://api.deepgram.com/v1/listen'
     '?encoding=linear16&sample_rate=16000&channels=1'
-    '&language=ar&model=nova-2&smart_format=true&interim_results=true',
+    // model=nova-3: nova-2 rejected language=ar with HTTP 400 (Bad Request).
+    // nova-3 is Deepgram's current multilingual model. If "ar" is still
+    // rejected, the onError/onDone logs below print Deepgram's exact reason —
+    // then try language=multi (also suits Arabic+English code-switching).
+    '&language=ar&model=nova-3&smart_format=true&interim_results=true',
   );
 
   debugPrint('🔌 WebSocket connecting to: ${uri.host}');
@@ -91,14 +95,19 @@ Future<void> _startDeepgramStream() async {
       }
     },
     onDone: () {
-      debugPrint('🔌 WebSocket closed. shouldRestart=$_shouldRestart');
+      // On a bad request Deepgram closes with a code + reason (e.g. 1008 and a
+      // message naming the rejected param) — log it so failures are diagnosable.
+      debugPrint('🔌 WebSocket closed. code=${_channel?.closeCode} '
+          'reason="${_channel?.closeReason}" shouldRestart=$_shouldRestart');
       if (_shouldRestart) {
         Future.delayed(
             const Duration(milliseconds: 500), _startDeepgramStream);
       }
     },
     onError: (error) {
-      debugPrint('❌ Error: $error');
+      // A handshake rejection (e.g. HTTP 400) surfaces here with the status/
+      // reason, showing exactly which query param Deepgram rejected.
+      debugPrint('❌ Deepgram WS error: $error');
       if (_shouldRestart) {
         Future.delayed(
             const Duration(milliseconds: 500), _startDeepgramStream);

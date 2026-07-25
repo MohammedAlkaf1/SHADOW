@@ -55,7 +55,7 @@ const Map<String, String> _dgParams = {
   'sample_rate': '16000',
   'channels': '1',
   'language': 'ar',
-  'model': 'nova-2',
+  'model': 'nova-3',
   'smart_format': 'true',
   'interim_results': 'true',
 };
