@@ -86,12 +86,16 @@ Future<void> _startDeepgramStream() async {
         debugPrint('⚠️ Deepgram server msg: ${result.serverMessage}');
         return;
       }
-      debugPrint(
-          '📝 Transcript: "${result.transcript}" | final=${result.isFinal}');
+      // Full trace of the extracted value (separate from the raw frame) so we
+      // can tell empty transcripts apart from a wiring break.
+      debugPrint('📝 extracted="${result.transcript}" '
+          'final=${result.isFinal} hasText=${result.hasText}');
       if (result.hasText) {
         final display = _accumulator.add(result.transcript, result.isFinal);
-        debugPrint('💾 State updated: $display');
+        debugPrint('➡️ display="$display" onTranscriptWired=${_onTranscript != null}');
         _onTranscript?.call(display);
+      } else {
+        debugPrint('⚪ empty transcript (final=${result.isFinal}) — nothing sent to UI');
       }
     },
     onDone: () {
