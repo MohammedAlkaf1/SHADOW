@@ -231,28 +231,32 @@ class _VisualAssistanceModeWidgetState
                           _resultCard(),
                         ],
                         const SizedBox(height: AppSpacing.lg),
-                        // Action cards
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _actionCard(
-                                icon: Icons.visibility_rounded,
-                                label: 'صف المحيط',
-                                enabled: !analyzing,
-                                onTap: () => _captureAndAnalyze('describe'),
+                        // Action cards. IntrinsicHeight gives the stretched Row a
+                        // bounded height inside the scroll view (equal-height
+                        // cards) — plain stretch here forces infinite height.
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: _actionCard(
+                                  icon: Icons.visibility_rounded,
+                                  label: 'صف المحيط',
+                                  enabled: !analyzing,
+                                  onTap: () => _captureAndAnalyze('describe'),
+                                ),
                               ),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: _actionCard(
-                                icon: Icons.text_fields_rounded,
-                                label: 'اقرأ النص',
-                                enabled: !analyzing,
-                                onTap: () => _captureAndAnalyze('read_text'),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: _actionCard(
+                                  icon: Icons.text_fields_rounded,
+                                  label: 'اقرأ النص',
+                                  enabled: !analyzing,
+                                  onTap: () => _captureAndAnalyze('read_text'),
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         // Instruction
