@@ -28,26 +28,44 @@ error, a missing `google-services.json` is the most likely cause.
 or a secure local folder) so you can restore them into a fresh clone. Do **not**
 commit them, and do **not** move them out of `.gitignore`.
 
+## API keys — set once in env.json (never in the command)
+
+Keys are read at build time via `String.fromEnvironment`, populated from a local
+JSON file with `--dart-define-from-file`. Enter your keys **once** and they stay
+out of the command line and logs.
+
+1. Copy the template to the real (git-ignored) file — once:
+   ```powershell
+   Copy-Item env.example.json env.json
+   ```
+2. Open **`env.json`** and paste your keys between the quotes:
+   ```json
+   {
+     "DEEPGRAM_API_KEY": "your_deepgram_key",
+     "OPENAI_API_KEY": "your_openai_key"
+   }
+   ```
+   `env.json` is git-ignored — it is never committed. `env.example.json` (empty
+   placeholders) is the committed template. Deepgram powers live captions and voice
+   control; OpenAI powers vision and document simplification (leave it "" if you
+   don't have one yet — those two modes just show a "key missing" message).
+
 ## Building and running on Android
 
-API keys are passed at build time with `--dart-define` (never committed). Replace
-`YOUR_DEEPGRAM_KEY` / `YOUR_OPENAI_KEY` with the real keys. Deepgram powers live
-captions and voice control; OpenAI powers vision and document simplification.
-
-Prerequisites: `flutter doctor` all green, the two config files above in place, and
-a device connected (`flutter devices` to confirm) or an emulator running.
+Prerequisites: `flutter doctor` all green, `google-services.json` in place (see
+above), `env.json` filled in, and a device connected (`flutter devices`).
 
 **1. Build and run on a connected physical Android device** (debug), from the
 `app/` directory:
 
 ```powershell
-flutter run --dart-define=DEEPGRAM_API_KEY=YOUR_DEEPGRAM_KEY --dart-define=OPENAI_API_KEY=YOUR_OPENAI_KEY
+flutter run --dart-define-from-file=env.json
 ```
 
 **2. Build a release APK you can share / sideload**, from the `app/` directory:
 
 ```powershell
-flutter build apk --release --dart-define=DEEPGRAM_API_KEY=YOUR_DEEPGRAM_KEY --dart-define=OPENAI_API_KEY=YOUR_OPENAI_KEY
+flutter build apk --release --dart-define-from-file=env.json
 ```
 
 The APK is written to `build/app/outputs/flutter-apk/app-release.apk`. It is
