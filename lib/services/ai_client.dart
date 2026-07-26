@@ -1,23 +1,24 @@
 // AI provider client — the single swap point for the vision/learning AI calls.
 //
-// Currently Kimi (Moonshot), which is OpenAI-compatible (POST /chat/completions,
-// Bearer auth, same message shape). To swap providers, change the three
-// constants below and the env key name — nothing in the feature code changes.
+// Currently Google Gemini. Gemini is NOT OpenAI-compatible, so this file keeps
+// the same aiChatCompletion(messages:) interface the feature code already uses
+// (OpenAI-style role/content messages) and translates it into Gemini's
+// contents/parts request internally. To swap providers, change this file only.
 //
-// Verify against the current Kimi docs:
-//   - base URL: https://api.moonshot.ai/v1  (global; .cn is the China endpoint)
-//   - model:    kimi-k3 (must be a vision-capable model for image analysis)
-// If Kimi rejects the model or vision, change kAiModel here only.
+// Verify against current Gemini docs:
+//   - base URL: https://generativelanguage.googleapis.com/v1beta
+//   - model:    gemini-2.5-flash (vision + text, free tier)
+//   - endpoint: {base}/models/{model}:generateContent, auth via x-goog-api-key
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
-const String kAiBaseUrl = 'https://api.moonshot.ai/v1';
-const String kAiModel = 'kimi-k3';
+const String kAiBaseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+const String kAiModel = 'gemini-2.5-flash';
 
 // Read at build time from env.json via --dart-define-from-file.
-const String _kAiApiKey = String.fromEnvironment('KIMI_API_KEY');
+const String _kAiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 
 /// Result of an AI call: either [content] (success) or an Arabic [error].
 class AiResult {
@@ -31,73 +32,151 @@ class AiResult {
   bool get ok => content != null;
 }
 
-/// OpenAI-compatible chat completion against the configured provider. Handles
-/// the failure states (missing key, HTTP error, empty response, network error)
-/// and returns Arabic error messages — never throws.
+/// Chat completion against Gemini. Accepts OpenAI-style [messages] (role +
+/// content, where content is a String or a list of {type:text|image_url}
+/// parts) so callers don't change. Handles every failure state with Arabic
+/// error messages — never throws.
 Future<AiResult> aiChatCompletion({
   required List<Map<String, dynamic>> messages,
   int maxTokens = 800,
 }) async {
   // Diagnostics: key presence/length (never the key itself) + endpoint/model.
-  debugPrint('🤖 Kimi key exists: ${_kAiApiKey.isNotEmpty} '
+  debugPrint('🤖 Gemini key exists: ${_kAiApiKey.isNotEmpty} '
       '(len=${_kAiApiKey.length}) model=$kAiModel base=$kAiBaseUrl');
 
   if (_kAiApiKey.isEmpty) {
     return AiResult.failure(
-        'خطأ: مفتاح KIMI_API_KEY غير موجود. أضِفه في env.json ثم أعد تشغيل التطبيق.');
+        'خطأ: مفتاح GEMINI_API_KEY غير موجود. أضِفه في env.json ثم أعد تشغيل التطبيق.');
   }
+
+  final requestBody = _toGeminiRequest(messages, maxTokens);
 
   http.Response response;
   try {
     response = await http.post(
-      Uri.parse('$kAiBaseUrl/chat/completions'),
+      Uri.parse('$kAiBaseUrl/models/$kAiModel:generateContent'),
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer $_kAiApiKey',
+        'x-goog-api-key': _kAiApiKey,
       },
-      body: jsonEncode({
-        'model': kAiModel,
-        'messages': messages,
-        'max_tokens': maxTokens,
-      }),
+      body: jsonEncode(requestBody),
     );
   } catch (e) {
-    debugPrint('❌ Kimi network error: $e');
+    debugPrint('❌ Gemini network error: $e');
     return AiResult.failure(
         'تعذّر الاتصال بالإنترنت. تحقّق من الشبكة وحاول مجدداً. ($e)');
   }
 
   // Always log the status + raw body so the exact failure is visible.
   final rawBody = utf8.decode(response.bodyBytes, allowMalformed: true);
-  debugPrint('🤖 Kimi HTTP ${response.statusCode} body: $rawBody');
+  debugPrint('🤖 Gemini HTTP ${response.statusCode} body: $rawBody');
 
   if (response.statusCode == 200) {
     try {
       final data = jsonDecode(rawBody);
-      final content =
-          data['choices']?[0]?['message']?['content'] as String?;
+      final content = _extractGeminiText(data);
       if (content == null || content.trim().isEmpty) {
         return AiResult.failure(
-            'لم يصل رد من المساعد الذكي (200 بجسم غير متوقع). حاول مرة أخرى.');
+            'لم يصل رد من المساعد الذكي (قد يكون المحتوى محجوباً). حاول مرة أخرى.');
       }
       return AiResult.success(content);
     } catch (e) {
-      debugPrint('❌ Kimi 200 parse error: $e');
+      debugPrint('❌ Gemini 200 parse error: $e');
       return AiResult.failure('تعذّر قراءة رد المساعد الذكي (200).');
     }
   }
 
-  // Non-200: surface the provider's message + status number on screen.
+  // Non-200: surface Gemini's message + status number on screen.
   String detail;
   try {
     final err = jsonDecode(rawBody);
-    detail = (err['error']?['message'] ?? err['message'] ?? err['error'])
-            ?.toString() ??
-        rawBody;
+    detail = (err['error']?['message'])?.toString() ?? rawBody;
   } catch (_) {
     detail = rawBody.isEmpty ? 'لا يوجد تفصيل' : rawBody;
   }
   if (detail.length > 200) detail = '${detail.substring(0, 200)}…';
   return AiResult.failure(
       'تعذّر الاتصال بالمساعد الذكي (${response.statusCode}): $detail');
+}
+
+/// Translates OpenAI-style messages into a Gemini generateContent request.
+/// - `system` messages -> systemInstruction
+/// - `assistant` role  -> Gemini "model" role, others -> "user"
+/// - text parts -> {text}, image_url data-URIs -> {inline_data}
+Map<String, dynamic> _toGeminiRequest(
+    List<Map<String, dynamic>> messages, int maxTokens) {
+  final systemParts = <Map<String, dynamic>>[];
+  final contents = <Map<String, dynamic>>[];
+
+  for (final msg in messages) {
+    final role = msg['role'] as String?;
+    final content = msg['content'];
+
+    if (role == 'system') {
+      if (content is String && content.isNotEmpty) {
+        systemParts.add({'text': content});
+      }
+      continue;
+    }
+
+    final parts = <Map<String, dynamic>>[];
+    if (content is String) {
+      if (content.isNotEmpty) parts.add({'text': content});
+    } else if (content is List) {
+      for (final part in content) {
+        if (part is! Map) continue;
+        final type = part['type'];
+        if (type == 'text') {
+          parts.add({'text': part['text']});
+        } else if (type == 'image_url') {
+          final url = (part['image_url'] as Map?)?['url'] as String?;
+          final inline = _dataUriToInline(url);
+          if (inline != null) parts.add({'inline_data': inline});
+        }
+      }
+    }
+
+    if (parts.isNotEmpty) {
+      contents.add({
+        'role': role == 'assistant' ? 'model' : 'user',
+        'parts': parts,
+      });
+    }
+  }
+
+  final body = <String, dynamic>{
+    'contents': contents,
+    'generationConfig': {
+      'maxOutputTokens': maxTokens,
+      // Disable "thinking" so gemini-2.5-flash returns direct output instead of
+      // spending the token budget on reasoning (which can yield an empty reply).
+      'thinkingConfig': {'thinkingBudget': 0},
+    },
+  };
+  if (systemParts.isNotEmpty) {
+    body['systemInstruction'] = {'parts': systemParts};
+  }
+  return body;
+}
+
+/// Parses a `data:<mime>;base64,<data>` URI into Gemini inline_data.
+Map<String, dynamic>? _dataUriToInline(String? url) {
+  if (url == null) return null;
+  final match = RegExp(r'^data:(.+?);base64,(.*)$', dotAll: true).firstMatch(url);
+  if (match == null) return null;
+  return {'mime_type': match.group(1), 'data': match.group(2)};
+}
+
+/// Joins the text of all parts in the first Gemini candidate.
+String? _extractGeminiText(dynamic data) {
+  final candidates = data['candidates'];
+  if (candidates is! List || candidates.isEmpty) return null;
+  final parts = candidates.first?['content']?['parts'];
+  if (parts is! List) return null;
+  final buffer = StringBuffer();
+  for (final part in parts) {
+    final text = (part is Map) ? part['text'] : null;
+    if (text is String) buffer.write(text);
+  }
+  return buffer.toString();
 }
