@@ -1,5 +1,6 @@
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -27,7 +28,7 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF003651),
+      backgroundColor: AppColors.navy,
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -36,31 +37,28 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
               width: 100.0,
               height: 100.0,
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.10),
+                color: AppColors.onNavy.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(28.0),
-                border: Border.all(
-                  color: const Color(0xFFC16325),
-                  width: 2.0,
-                ),
+                border: Border.all(color: AppColors.terracotta, width: 2.0),
               ),
               alignment: Alignment.center,
               child: Text(
                 'ش',
-                style: GoogleFonts.cairo(
+                style: GoogleFonts.tajawal(
                   fontSize: 52.0,
                   fontWeight: FontWeight.w900,
-                  color: const Color(0xFFC16325),
+                  color: AppColors.terracotta,
                   height: 1.0,
                 ),
               ),
             ),
-            const SizedBox(height: 24.0),
+            const SizedBox(height: AppSpacing.lg),
             Text(
               'شادو',
-              style: GoogleFonts.cairo(
+              style: GoogleFonts.tajawal(
                 fontSize: 44.0,
                 fontWeight: FontWeight.w900,
-                color: Colors.white,
+                color: AppColors.onNavy,
                 letterSpacing: 1.0,
                 height: 1.2,
               ),
@@ -68,10 +66,10 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
             const SizedBox(height: 4.0),
             Text(
               'Shadow',
-              style: GoogleFonts.cairo(
+              style: GoogleFonts.tajawal(
                 fontSize: 20.0,
                 fontWeight: FontWeight.w600,
-                color: const Color(0xFFC16325),
+                color: AppColors.terracotta,
                 letterSpacing: 3.0,
                 height: 1.2,
               ),
@@ -79,10 +77,10 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
             const SizedBox(height: 14.0),
             Text(
               'مرافقك الأكاديمي الذكي',
-              style: GoogleFonts.cairo(
+              style: GoogleFonts.tajawal(
                 fontSize: 17.0,
                 fontWeight: FontWeight.w500,
-                color: Colors.white.withOpacity(0.75),
+                color: AppColors.mutedOnNavy,
                 height: 1.4,
               ),
             ),

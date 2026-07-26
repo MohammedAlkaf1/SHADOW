@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- ISL brand navy (#1E2A3A) — used for the native launch/splash window so
+         there is no white/blue flash before Flutter's navy splash renders. -->
+    <color name="il_navy">#FF1E2A3A</color>
+</resources>
