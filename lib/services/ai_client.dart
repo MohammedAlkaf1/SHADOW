@@ -10,6 +10,7 @@
 // If Kimi rejects the model or vision, change kAiModel here only.
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
 const String kAiBaseUrl = 'https://api.moonshot.ai/v1';
@@ -37,6 +38,10 @@ Future<AiResult> aiChatCompletion({
   required List<Map<String, dynamic>> messages,
   int maxTokens = 800,
 }) async {
+  // Diagnostics: key presence/length (never the key itself) + endpoint/model.
+  debugPrint('🤖 Kimi key exists: ${_kAiApiKey.isNotEmpty} '
+      '(len=${_kAiApiKey.length}) model=$kAiModel base=$kAiBaseUrl');
+
   if (_kAiApiKey.isEmpty) {
     return AiResult.failure(
         'خطأ: مفتاح KIMI_API_KEY غير موجود. أضِفه في env.json ثم أعد تشغيل التطبيق.');
@@ -56,34 +61,43 @@ Future<AiResult> aiChatCompletion({
         'max_tokens': maxTokens,
       }),
     );
-  } catch (_) {
+  } catch (e) {
+    debugPrint('❌ Kimi network error: $e');
     return AiResult.failure(
-        'تعذّر الاتصال بالإنترنت. تحقّق من الشبكة وحاول مجدداً.');
+        'تعذّر الاتصال بالإنترنت. تحقّق من الشبكة وحاول مجدداً. ($e)');
   }
+
+  // Always log the status + raw body so the exact failure is visible.
+  final rawBody = utf8.decode(response.bodyBytes, allowMalformed: true);
+  debugPrint('🤖 Kimi HTTP ${response.statusCode} body: $rawBody');
 
   if (response.statusCode == 200) {
     try {
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = jsonDecode(rawBody);
       final content =
           data['choices']?[0]?['message']?['content'] as String?;
       if (content == null || content.trim().isEmpty) {
-        return AiResult.failure('لم يصل رد من المساعد الذكي. حاول مرة أخرى.');
+        return AiResult.failure(
+            'لم يصل رد من المساعد الذكي (200 بجسم غير متوقع). حاول مرة أخرى.');
       }
       return AiResult.success(content);
-    } catch (_) {
-      return AiResult.failure('تعذّر قراءة رد المساعد الذكي.');
+    } catch (e) {
+      debugPrint('❌ Kimi 200 parse error: $e');
+      return AiResult.failure('تعذّر قراءة رد المساعد الذكي (200).');
     }
   }
 
-  // Non-200: surface the provider's message if present.
+  // Non-200: surface the provider's message + status number on screen.
   String detail;
   try {
-    final err = jsonDecode(utf8.decode(response.bodyBytes));
-    detail = (err['error']?['message'] ?? err['message'])?.toString() ??
-        'خطأ غير معروف';
+    final err = jsonDecode(rawBody);
+    detail = (err['error']?['message'] ?? err['message'] ?? err['error'])
+            ?.toString() ??
+        rawBody;
   } catch (_) {
-    detail = 'رمز الحالة ${response.statusCode}';
+    detail = rawBody.isEmpty ? 'لا يوجد تفصيل' : rawBody;
   }
+  if (detail.length > 200) detail = '${detail.substring(0, 200)}…';
   return AiResult.failure(
       'تعذّر الاتصال بالمساعد الذكي (${response.statusCode}): $detail');
 }
