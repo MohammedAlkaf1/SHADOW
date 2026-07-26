@@ -14,6 +14,7 @@ import 'saved_transcripts_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'deaf_mode_transcription_model.dart';
 export 'deaf_mode_transcription_model.dart';
@@ -36,6 +37,9 @@ class _DeafModeTranscriptionWidgetState
   late AnimationController _animController;
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
+
+  // Guards against the record toggle firing twice during a transition.
+  bool _recordBusy = false;
 
   @override
   void initState() {
@@ -96,6 +100,18 @@ class _DeafModeTranscriptionWidgetState
         behavior: SnackBarBehavior.floating,
       ),
     );
+  }
+
+  /// Requests the RECORD_AUDIO runtime permission before starting. Returns true
+  /// if granted; otherwise shows an Arabic message and returns false.
+  Future<bool> _ensureMicPermission() async {
+    final status = await Permission.microphone.request();
+    debugPrint('🎤 Mic permission status: $status');
+    if (status.isGranted) return true;
+    _snack(status.isPermanentlyDenied
+        ? 'الميكروفون محظور. فعّله من إعدادات التطبيق للسماح بالتسجيل.'
+        : 'يرجى السماح باستخدام الميكروفون لتشغيل التسجيل.');
+    return false;
   }
 
   void _showSettingsDialog() {
@@ -475,12 +491,26 @@ class _DeafModeTranscriptionWidgetState
                                 hoverColor: Colors.transparent,
                                 highlightColor: Colors.transparent,
                                 onTap: () async {
-                                  // Gate consent only when starting (not stopping).
-                                  if (!FFAppState().isRecording) {
-                                    if (!await ensureAiConsent(context)) return;
+                                  // Re-entrancy guard: ignore taps while a
+                                  // start/stop transition is in flight, so the
+                                  // toggle can't fire twice (which showed up as
+                                  // an immediate "Stop requested" after start).
+                                  if (_recordBusy) return;
+                                  _recordBusy = true;
+                                  try {
+                                    // When starting, gate consent and mic
+                                    // permission BEFORE toggling isRecording, so
+                                    // the OS permission dialog can't interleave
+                                    // with the stream setup.
+                                    if (!FFAppState().isRecording) {
+                                      if (!await ensureAiConsent(context)) return;
+                                      if (!await _ensureMicPermission()) return;
+                                    }
+                                    await actions.startRealtimeTranscription();
+                                    if (mounted) safeSetState(() {});
+                                  } finally {
+                                    _recordBusy = false;
                                   }
-                                  await actions.startRealtimeTranscription();
-                                  safeSetState(() {});
                                 },
                                 child: Container(
                                   width: 88.0,

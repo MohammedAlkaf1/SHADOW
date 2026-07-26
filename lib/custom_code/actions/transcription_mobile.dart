@@ -15,12 +15,25 @@ IOWebSocketChannel? _channel;
 bool _shouldRestart = false;
 void Function(String)? _onTranscript;
 final TranscriptAccumulator _accumulator = TranscriptAccumulator();
+int _sentChunkCount = 0;
+
+/// Forwards a captured audio chunk to Deepgram and logs the first chunk (and
+/// every 50th) so we can confirm audio capture actually started ("Sent bytes").
+void _forwardAudio(Uint8List data) {
+  if (!_shouldRestart) return;
+  _channel?.sink.add(data);
+  _sentChunkCount++;
+  if (_sentChunkCount == 1 || _sentChunkCount % 50 == 0) {
+    debugPrint('🎙️ Sent bytes: chunk #$_sentChunkCount (${data.length} bytes)');
+  }
+}
 
 Future<void> startPlatformTranscription(
     void Function(String text) onTranscript) async {
   _onTranscript = onTranscript;
   _shouldRestart = true;
   _accumulator.clear();
+  _sentChunkCount = 0;
 
   debugPrint('🔑 Key exists: ${_apiKey.isNotEmpty}');
   if (_apiKey.isNotEmpty) {
@@ -132,7 +145,7 @@ Future<void> _startDeepgramStream() async {
 
     stream.listen(
       (data) {
-        if (_shouldRestart) _channel?.sink.add(data);
+        _forwardAudio(data);
       },
       onError: (e) => debugPrint('❌ Audio stream error: $e'),
     );
@@ -153,7 +166,7 @@ Future<void> _startDeepgramStream() async {
       debugPrint('🎤 AAC fallback streaming active');
       stream.listen(
         (data) {
-          if (_shouldRestart) _channel?.sink.add(data);
+          _forwardAudio(data);
         },
         onError: (e) => debugPrint('❌ AAC stream error: $e'),
       );
