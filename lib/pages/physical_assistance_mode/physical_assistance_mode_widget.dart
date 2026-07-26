@@ -1,12 +1,12 @@
 import '/a11y.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/theme.dart';
+import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'physical_assistance_mode_model.dart';
 export 'physical_assistance_mode_model.dart';
@@ -45,6 +45,19 @@ class _PhysicalAssistanceModeWidgetState
     super.dispose();
   }
 
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            textAlign: TextAlign.end,
+            style: AppText.body(color: AppColors.onNavy)),
+        backgroundColor: AppColors.navy,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _handleVoiceCommand() async {
     if (!await ensureAiConsent(context)) return;
     if (!mounted) return;
@@ -71,9 +84,8 @@ class _PhysicalAssistanceModeWidgetState
     }
   }
 
-  /// Quick contact: dial the student's saved number. If none is set yet,
-  /// prompt them to add one first. This is NOT an emergency service — it is a
-  /// student-configured number.
+  /// Quick contact: dial the student's saved number. If none is set yet, prompt
+  /// them to add one first. NOT an emergency service — a student-set number.
   Future<void> _quickContact() async {
     final number = _quickContactNumber;
     if (number == null || number.isEmpty) {
@@ -89,82 +101,74 @@ class _PhysicalAssistanceModeWidgetState
     final uri = Uri(scheme: 'tel', path: number);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'تعذّر بدء الاتصال بالرقم $number',
-            textAlign: TextAlign.end,
-            style: GoogleFonts.cairo(),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _snack('تعذّر بدء الاتصال بالرقم $number');
     }
   }
 
-  /// Add or edit the quick-contact number. Returns the saved number, or null if
-  /// the student cancelled.
+  /// Add or edit the quick-contact number. Returns the saved number, or null.
   Future<String?> _editQuickContactDialog() async {
     final controller = TextEditingController(text: _quickContactNumber ?? '');
     final saved = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        shape:
-            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-        title: Text(
-          'رقم الاتصال السريع',
-          textAlign: TextAlign.end,
-          style: GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 20.0),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              'أدخل رقم الشخص الذي تريد الاتصال به بسرعة (مثل مرافق أو أحد أفراد العائلة). يُحفظ على جهازك فقط.',
-              textAlign: TextAlign.end,
-              style: GoogleFonts.cairo(fontSize: 14.0),
-            ),
-            const SizedBox(height: 16.0),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.phone,
-              textAlign: TextAlign.end,
-              autofocus: true,
-              style: GoogleFonts.cairo(),
-              decoration: InputDecoration(
-                hintText: '05xxxxxxxx',
-                hintStyle: GoogleFonts.cairo(),
-                border: const OutlineInputBorder(),
+      builder: (dialogContext) => Directionality(
+        textDirection: ui.TextDirection.rtl,
+        child: AlertDialog(
+          backgroundColor: AppColors.surface,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
+          title: Text('رقم الاتصال السريع',
+              textAlign: TextAlign.end, style: AppText.title()),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                'أدخل رقم الشخص الذي تريد الاتصال به بسرعة (مثل مرافق أو أحد أفراد العائلة). يُحفظ على جهازك فقط.',
+                textAlign: TextAlign.end,
+                style: AppText.label(color: AppColors.onCream),
               ),
+              const SizedBox(height: AppSpacing.md),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.phone,
+                textAlign: TextAlign.end,
+                autofocus: true,
+                style: AppText.body(color: AppColors.onCream),
+                cursorColor: AppColors.terracotta,
+                decoration: InputDecoration(
+                  hintText: '05xxxxxxxx',
+                  hintStyle: AppText.body(color: AppColors.mutedOnCream),
+                  enabledBorder: const OutlineInputBorder(
+                      borderSide: BorderSide(color: AppColors.border)),
+                  focusedBorder: const OutlineInputBorder(
+                      borderSide:
+                          BorderSide(color: AppColors.navy, width: 2.0)),
+                ),
+              ),
+            ],
+          ),
+          actionsAlignment: MainAxisAlignment.spaceBetween,
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child:
+                  Text('إلغاء', style: AppText.button(color: AppColors.navy)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.navy,
+                foregroundColor: AppColors.onNavy,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12.0)),
+              ),
+              onPressed: () {
+                final value = controller.text.trim();
+                Navigator.pop(dialogContext, value.isEmpty ? null : value);
+              },
+              child: Text('حفظ', style: AppText.button(color: AppColors.onNavy)),
             ),
           ],
         ),
-        actionsAlignment: MainAxisAlignment.spaceBetween,
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: Text('إلغاء', style: GoogleFonts.cairo()),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: FlutterFlowTheme.of(context).primary,
-              foregroundColor: FlutterFlowTheme.of(context).onPrimary,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12.0)),
-            ),
-            onPressed: () {
-              final value = controller.text.trim();
-              if (value.isEmpty) {
-                Navigator.pop(dialogContext);
-                return;
-              }
-              Navigator.pop(dialogContext, value);
-            },
-            child: Text('حفظ',
-                style: GoogleFonts.cairo(fontWeight: FontWeight.bold)),
-          ),
-        ],
       ),
     );
 
@@ -177,7 +181,8 @@ class _PhysicalAssistanceModeWidgetState
 
   @override
   Widget build(BuildContext context) {
-    final commands = [
+    final listening = _model.isListeningForCommand;
+    final commands = <({String label, IconData icon})>[
       (label: 'افتح وضع الصمم', icon: Icons.hearing_rounded),
       (label: 'افتح وضع البصرية', icon: Icons.visibility_rounded),
       (label: 'افتح وضع التعلم', icon: Icons.psychology_rounded),
@@ -185,274 +190,199 @@ class _PhysicalAssistanceModeWidgetState
       (label: 'اتصل بجهة الاتصال السريع', icon: Icons.phone_rounded),
     ];
 
-    return Scaffold(
-      key: scaffoldKey,
-      backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-      floatingActionButton: a11yButton(
-        label: 'اتصال سريع',
-        hint: _quickContactNumber == null
-            ? 'لم يتم تعيين رقم بعد، اضغط للإضافة'
-            : 'اتصال بالرقم المحفوظ',
-        child: FloatingActionButton.extended(
-          onPressed: _quickContact,
-          backgroundColor: FlutterFlowTheme.of(context).primary,
-          foregroundColor: FlutterFlowTheme.of(context).onPrimary,
-          icon: Icon(Icons.phone_rounded,
-              color: FlutterFlowTheme.of(context).onPrimary),
-          label: Text(
-            'اتصال سريع',
-            style: GoogleFonts.cairo(
-                color: FlutterFlowTheme.of(context).onPrimary,
-                fontWeight: FontWeight.bold),
+    return Directionality(
+      textDirection: ui.TextDirection.rtl,
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: AppColors.cream,
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+        floatingActionButton: a11yButton(
+          label: 'اتصال سريع',
+          hint: _quickContactNumber == null
+              ? 'لم يتم تعيين رقم بعد، اضغط للإضافة'
+              : 'اتصال بالرقم المحفوظ',
+          child: FloatingActionButton.extended(
+            onPressed: _quickContact,
+            backgroundColor: AppColors.navy,
+            foregroundColor: AppColors.onNavy,
+            icon: const Icon(Icons.phone_rounded, color: AppColors.onNavy),
+            label: Text('اتصال سريع',
+                style: AppText.button(color: AppColors.onNavy)),
           ),
         ),
-      ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).secondaryBackground,
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Padding(
-                  padding:
-                      EdgeInsetsDirectional.fromSTEB(32.0, 20.0, 32.0, 20.0),
-                  child: Row(
-                    children: [
-                      a11yButton(
-                        label: 'رجوع',
-                        child: FlutterFlowIconButton(
-                        borderRadius: 8.0,
-                        buttonSize: 48.0,
-                        fillColor: Colors.transparent,
-                        icon: Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          color: FlutterFlowTheme.of(context).primaryText,
-                          size: 24.0,
-                        ),
-                        onPressed: () => context.pop(),
-                      ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          'التحكم بالصوت',
-                          textAlign: TextAlign.end,
-                          style: FlutterFlowTheme.of(context)
-                              .titleLarge
-                              .override(
-                                font: GoogleFonts.cairo(
-                                    fontWeight: FontWeight.bold),
-                                letterSpacing: 0.0,
-                                fontWeight: FontWeight.bold,
-                                lineHeight: 1.4,
-                              ),
-                        ),
-                      ),
-                      a11yButton(
-                        label: 'تعيين رقم الاتصال السريع',
-                        child: FlutterFlowIconButton(
-                          borderRadius: 8.0,
-                          buttonSize: 48.0,
-                          fillColor: Colors.transparent,
-                          icon: Icon(
-                            Icons.contact_phone_outlined,
-                            color: FlutterFlowTheme.of(context).secondaryText,
-                            size: 24.0,
-                          ),
-                          onPressed: _editQuickContactDialog,
-                        ),
-                      ),
-                    ].divide(SizedBox(width: 20.0)),
-                  ),
-                ),
-                Container(
-                  height: 1.0,
-                  color: FlutterFlowTheme.of(context).alternate,
-                ),
-              ],
-            ),
-          ),
-          // Scrollable body
-          Expanded(
-            child: SingleChildScrollView(
-              padding:
-                  const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 120.0),
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Container(
+              color: AppColors.cream,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  // Voice command display
-                  AnimatedContainer(
-                    duration: const Duration(milliseconds: 300),
-                    width: double.infinity,
-                    constraints: const BoxConstraints(minHeight: 80.0),
-                    padding: const EdgeInsets.all(24.0),
-                    decoration: BoxDecoration(
-                      color:
-                          FlutterFlowTheme.of(context).secondaryBackground,
-                      borderRadius: BorderRadius.circular(24.0),
-                      border: Border.all(
-                        color: _model.isListeningForCommand
-                            ? FlutterFlowTheme.of(context).primary
-                            : FlutterFlowTheme.of(context).alternate,
-                        width: 2.0,
-                      ),
-                    ),
-                    child: a11yLive(Text(
-                      _model.isListeningForCommand
-                          ? '🎙 جارٍ الاستماع...'
-                          : (_model.lastVoiceCommand ??
-                              'انتظار الأمر الصوتي...'),
-                      textAlign: TextAlign.center,
-                      style: FlutterFlowTheme.of(context)
-                          .titleMedium
-                          .override(
-                            font: GoogleFonts.cairo(
-                                fontWeight: FontWeight.bold),
-                            color: _model.isListeningForCommand
-                                ? FlutterFlowTheme.of(context).primary
-                                : FlutterFlowTheme.of(context)
-                                    .secondaryText,
-                            letterSpacing: 0.0,
-                            lineHeight: 1.4,
-                          ),
-                    )),
-                  ),
-                  SizedBox(height: 40.0),
-                  // Big mic button
-                  a11yButton(
-                    label: _model.isListeningForCommand
-                        ? 'جارٍ الاستماع'
-                        : 'اضغط وتكلم لإعطاء أمر صوتي',
-                    enabled: !_model.isListeningForCommand,
-                    child: GestureDetector(
-                    onTap: _model.isListeningForCommand
-                        ? null
-                        : _handleVoiceCommand,
-                    child: AnimatedContainer(
-                      duration: const Duration(milliseconds: 250),
-                      width: 140.0,
-                      height: 140.0,
-                      decoration: BoxDecoration(
-                        color: _model.isListeningForCommand
-                            ? FlutterFlowTheme.of(context)
-                                .success
-                                .withOpacity(0.2)
-                            : FlutterFlowTheme.of(context).success,
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: FlutterFlowTheme.of(context)
-                                .success
-                                .withOpacity(
-                                    _model.isListeningForCommand ? 0.6 : 0.3),
-                            blurRadius: 24.0,
-                            spreadRadius:
-                                _model.isListeningForCommand ? 10.0 : 0.0,
-                          ),
-                        ],
-                      ),
-                      alignment: Alignment.center,
-                      child: _model.isListeningForCommand
-                          ? SizedBox(
-                              width: 52.0,
-                              height: 52.0,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 3.0,
-                                color:
-                                    FlutterFlowTheme.of(context).success,
-                              ),
-                            )
-                          : const Icon(
-                              Icons.mic_rounded,
-                              color: Colors.white,
-                              size: 64.0,
-                            ),
-                    ),
-                  ),
-                  ),
-                  SizedBox(height: 16.0),
-                  Text(
-                    _model.isListeningForCommand
-                        ? 'جارٍ الاستماع...'
-                        : 'اضغط وتكلم',
-                    style: FlutterFlowTheme.of(context).titleSmall.override(
-                          font: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                          color: _model.isListeningForCommand
-                              ? FlutterFlowTheme.of(context).success
-                              : FlutterFlowTheme.of(context).primaryText,
-                          letterSpacing: 0.0,
-                        ),
-                  ),
-                  SizedBox(height: 40.0),
-                  // Commands section title
-                  Align(
-                    alignment: AlignmentDirectional.centerEnd,
-                    child: Text(
-                      'الأوامر المدعومة',
-                      style: FlutterFlowTheme.of(context)
-                          .titleSmall
-                          .override(
-                            font: GoogleFonts.cairo(
-                                fontWeight: FontWeight.bold),
-                            letterSpacing: 0.0,
-                            fontWeight: FontWeight.bold,
-                          ),
-                    ),
-                  ),
-                  SizedBox(height: 16.0),
-                  // Command cards
-                  ...commands.map(
-                    (cmd) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12.0),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 20.0, vertical: 18.0),
-                        decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context)
-                              .primaryContainer,
-                          borderRadius: BorderRadius.circular(16.0),
-                          border: Border.all(
-                            color: FlutterFlowTheme.of(context)
-                                .primary
-                                .withOpacity(0.25),
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                        AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                    child: Row(
+                      children: [
+                        a11yButton(
+                          label: 'رجوع',
+                          child: FlutterFlowIconButton(
+                            borderRadius: 8.0,
+                            buttonSize: 48.0,
+                            fillColor: Colors.transparent,
+                            icon: const Icon(Icons.arrow_forward_ios_rounded,
+                                color: AppColors.onCream, size: 22.0),
+                            onPressed: () => context.pop(),
                           ),
                         ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            Text(
-                              '"${cmd.label}"',
-                              style: FlutterFlowTheme.of(context)
-                                  .bodyMedium
-                                  .override(
-                                    font: GoogleFonts.cairo(
-                                        fontWeight: FontWeight.w600),
-                                    letterSpacing: 0.0,
-                                  ),
-                            ),
-                            SizedBox(width: 12.0),
-                            Icon(
-                              cmd.icon,
-                              color:
-                                  FlutterFlowTheme.of(context).primary,
-                              size: 22.0,
-                            ),
-                          ],
+                        Expanded(
+                          child: Text('التحكم بالصوت',
+                              textAlign: TextAlign.end, style: AppText.title()),
                         ),
-                      ),
+                        a11yButton(
+                          label: 'تعيين رقم الاتصال السريع',
+                          child: FlutterFlowIconButton(
+                            borderRadius: 8.0,
+                            buttonSize: 48.0,
+                            fillColor: Colors.transparent,
+                            icon: const Icon(Icons.contact_phone_outlined,
+                                color: AppColors.mutedOnCream, size: 24.0),
+                            onPressed: _editQuickContactDialog,
+                          ),
+                        ),
+                      ].divide(const SizedBox(width: AppSpacing.sm)),
                     ),
                   ),
+                  Container(height: 1.0, color: AppColors.border),
                 ],
               ),
             ),
-          ),
-        ],
+            // Scrollable body
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                    AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, 120.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    // Voice command display
+                    AnimatedContainer(
+                      duration: const Duration(milliseconds: 300),
+                      width: double.infinity,
+                      constraints: const BoxConstraints(minHeight: 80.0),
+                      padding: const EdgeInsets.all(AppSpacing.lg),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius:
+                            BorderRadius.circular(AppSpacing.cardRadius),
+                        border: Border.all(
+                          color: listening
+                              ? AppColors.terracotta
+                              : AppColors.border,
+                          width: 2.0,
+                        ),
+                      ),
+                      child: a11yLive(Text(
+                        listening
+                            ? '🎙 جارٍ الاستماع...'
+                            : (_model.lastVoiceCommand ?? 'انتظار الأمر الصوتي'),
+                        textAlign: TextAlign.center,
+                        style: AppText.body(
+                            color: listening
+                                ? AppColors.terracotta
+                                : AppColors.mutedOnCream),
+                      )),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    // Big mic button
+                    Center(
+                      child: a11yButton(
+                        label: listening
+                            ? 'جارٍ الاستماع'
+                            : 'اضغط وتكلم لإعطاء أمر صوتي',
+                        enabled: !listening,
+                        child: GestureDetector(
+                          onTap: listening ? null : _handleVoiceCommand,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 250),
+                            width: 140.0,
+                            height: 140.0,
+                            decoration: BoxDecoration(
+                              color: listening
+                                  ? AppColors.terracotta
+                                  : AppColors.navy,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: (listening
+                                          ? AppColors.terracotta
+                                          : AppColors.navy)
+                                      .withValues(
+                                          alpha: listening ? 0.5 : 0.3),
+                                  blurRadius: 24.0,
+                                  spreadRadius: listening ? 8.0 : 0.0,
+                                ),
+                              ],
+                            ),
+                            alignment: Alignment.center,
+                            child: listening
+                                ? const SizedBox(
+                                    width: 52.0,
+                                    height: 52.0,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 3.0,
+                                        color: AppColors.onNavy),
+                                  )
+                                : const Icon(Icons.mic_rounded,
+                                    color: AppColors.onNavy, size: 64.0),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Text(
+                      listening ? 'جارٍ الاستماع...' : 'اضغط وتكلم',
+                      textAlign: TextAlign.center,
+                      style: AppText.title(
+                          color: listening
+                              ? AppColors.terracotta
+                              : AppColors.onCream),
+                    ),
+                    const SizedBox(height: AppSpacing.xl),
+                    // Commands section
+                    Text('الأوامر المدعومة',
+                        textAlign: TextAlign.end,
+                        style: AppText.body(color: AppColors.onCream)),
+                    const SizedBox(height: AppSpacing.md),
+                    ...commands.map(
+                      (cmd) => Padding(
+                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                          decoration: AppDecor.creamCard(),
+                          child: Row(
+                            children: [
+                              Icon(cmd.icon,
+                                  color: AppColors.navy, size: 22.0),
+                              const SizedBox(width: AppSpacing.md),
+                              Expanded(
+                                child: Text('"${cmd.label}"',
+                                    textAlign: TextAlign.end,
+                                    style:
+                                        AppText.body(color: AppColors.onCream)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
