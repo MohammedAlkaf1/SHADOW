@@ -7,20 +7,15 @@ import 'package:flutter/material.dart';
 // Begin custom action code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:syncfusion_flutter_pdf/pdf.dart';
+import '/services/ai_client.dart';
 
-const String _apiKey = String.fromEnvironment('OPENAI_API_KEY');
-
+// Document processing via the swappable AI provider (currently Kimi/Moonshot).
+// Name kept for the existing callers; provider config lives in ai_client.dart.
 Future<String> processDocumentWithGpt4o({
   Uint8List? fileBytes,
   required String mode, // 'summarize' | 'simplify' | 'quiz'
 }) async {
-  if (_apiKey.isEmpty) {
-    return 'خطأ: مفتاح OPENAI_API_KEY غير موجود. يرجى تشغيل التطبيق بـ --dart-define=OPENAI_API_KEY=...';
-  }
-
   if (fileBytes == null) {
     return 'يرجى اختيار ملف PDF أولاً';
   }
@@ -47,30 +42,17 @@ Future<String> processDocumentWithGpt4o({
     _ => 'لخص هذا المحتوى باللغة العربية:\n\n$text',
   };
 
-  final response = await http.post(
-    Uri.parse('https://api.openai.com/v1/chat/completions'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $_apiKey',
-    },
-    body: jsonEncode({
-      'model': 'gpt-4o',
-      'messages': [
-        {
-          'role': 'system',
-          'content':
-              'أنت مساعد تعليمي متخصص في دعم الطلاب ذوي صعوبات التعلم. ردودك دائماً بالعربية.',
-        },
-        {'role': 'user', 'content': prompt},
-      ],
-      'max_tokens': 800,
-    }),
+  final result = await aiChatCompletion(
+    maxTokens: 800,
+    messages: [
+      {
+        'role': 'system',
+        'content':
+            'أنت مساعد تعليمي متخصص في دعم الطلاب ذوي صعوبات التعلم. ردودك دائماً بالعربية.',
+      },
+      {'role': 'user', 'content': prompt},
+    ],
   );
 
-  if (response.statusCode == 200) {
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    return data['choices'][0]['message']['content'] as String;
-  } else {
-    return 'خطأ ${response.statusCode}: فشل الاتصال بـ GPT-4o';
-  }
+  return result.ok ? result.content! : result.error!;
 }

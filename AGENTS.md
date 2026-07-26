@@ -9,7 +9,7 @@ product. The university platform (auth, intake, specialist review, support plans
 dashboards, multi-tenancy) is **Phase 2+ and lives in a SEPARATE repository** —
 do not scaffold it here. Full plan, decisions, and the held Phase 2 kickoff prompt
 are in `docs/ROADMAP.md`. Architectural boundary to honour now: the AI features
-(Deepgram, GPT-4o) process only academic content the student chooses (lecture
+(Deepgram, Kimi) process only academic content the student chooses (lecture
 audio, slides, PDFs) — **never** medical reports or disability records.
 
 ---
@@ -22,7 +22,7 @@ Shadow is an Arabic-first accessibility app for Saudi university students with d
 
 - State management is **`provider` + FlutterFlow's `FFAppState`** (`lib/app_state.dart`).
 - Folder layout is FlutterFlow's: `lib/flutter_flow/`, `lib/pages/`, `lib/components/`, `lib/custom_code/actions/`, `lib/backend/`.
-- The AI provider for vision and document processing is **OpenAI GPT-4o** (`lib/custom_code/actions/*_gpt4o.dart`).
+- The AI provider for vision and document processing is **Kimi (Moonshot)**, OpenAI-compatible, behind `lib/services/ai_client.dart` (the swap point). The action files are still named `*_gpt4o.dart` for their callers but no longer use OpenAI.
 - Live captions use **Deepgram** streaming over WebSocket (`lib/custom_code/actions/transcription_mobile.dart`).
 - API keys are supplied at build time via `--dart-define` (e.g. `--dart-define=DEEPGRAM_API_KEY=... --dart-define=OPENAI_API_KEY=...`). They are **not** in source. Keep it that way.
 
@@ -35,7 +35,7 @@ A large amount of this code genuinely works. Treat it as a working prototype to 
 An earlier brief described a different architecture (Riverpod, Gemini, feature-first folders, service interfaces, `.env`/`flutter_dotenv`). **That brief was wrong about this repo. Ignore it.** Do not "helpfully" bring the code in line with it. Specifically:
 
 1. **Do NOT introduce Riverpod** or any new state-management library. Keep `provider` / `FFAppState`.
-2. **Do NOT switch AI providers.** Keep OpenAI GPT-4o and Deepgram. Do not add Gemini, Vertex, or anything else. (A provider change is a business decision the owner will make explicitly, if ever — not something you initiate.)
+2. **Do NOT switch AI providers on your own.** The provider for vision/learning is **Kimi (Moonshot)** (owner's explicit decision, 2026-07-25) and Deepgram for speech; both OpenAI-compatible/swappable via their service files. Do not add Gemini, Vertex, OpenAI, etc. without the owner's explicit direction.
 3. **Do NOT restructure folders.** Keep the FlutterFlow layout. Do not create a `features/` tree, do not add abstract `*Service` interfaces, do not move files to "clean up" the structure.
 4. **Do NOT run `flutter pub upgrade`** or bump package versions. The dependency set is pinned and working. If you believe a package genuinely must change, stop and ask first, with the specific reason.
 5. **Do NOT reformat, rename, or rewrite working files** to match a style or architecture you prefer. Change only what the task requires.

@@ -4,7 +4,7 @@
 //
 // AI features send data to third parties:
 //   - lecture audio -> Deepgram (speech to text)
-//   - images / PDF text -> OpenAI (description, simplification)
+//   - images / PDF text -> Kimi/Moonshot (description, simplification)
 // The lecturer whose voice is captured is also a data subject.
 
 import 'package:flutter/material.dart';
@@ -77,7 +77,7 @@ class ConsentScreen extends StatelessWidget {
                           _bullet(context,
                               'صوت المحاضرة يُرسل إلى خدمة Deepgram لتحويله إلى نص.'),
                           _bullet(context,
-                              'الصور ونصوص ملفات PDF تُرسل إلى خدمة OpenAI لوصفها وتبسيطها.'),
+                              'الصور ونصوص ملفات PDF تُرسل إلى خدمة Kimi (Moonshot) لوصفها وتبسيطها.'),
                           const SizedBox(height: 16.0),
                           _note(
                             context,

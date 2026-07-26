@@ -7,10 +7,7 @@ import 'package:flutter/material.dart';
 // Begin custom action code
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
-import 'dart:convert';
-import 'package:http/http.dart' as http;
-
-const String _apiKey = String.fromEnvironment('OPENAI_API_KEY');
+import '/services/ai_client.dart';
 
 const _campusContext = '''
 معلومات إمكانية الوصول في الحرم الجامعي - جامعة الملك سعود:
@@ -26,36 +23,19 @@ const _campusContext = '''
 Future<String> askRouteAssistant({
   required String question,
 }) async {
-  if (_apiKey.isEmpty) {
-    return 'خطأ: مفتاح OPENAI_API_KEY غير موجود.';
-  }
-
-  final response = await http.post(
-    Uri.parse('https://api.openai.com/v1/chat/completions'),
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $_apiKey',
-    },
-    body: jsonEncode({
-      'model': 'gpt-4o',
-      'messages': [
-        {
-          'role': 'system',
-          'content':
-              'أنت مساعد تنقل ذكي للطلاب ذوي الإعاقة الحركية في الحرم الجامعي. '
-                  'اعتمد على المعلومات التالية للإجابة:\n$_campusContext\n'
-                  'أجب بإيجاز وبوضوح باللغة العربية. إذا لم تعرف الإجابة، اقترح التواصل مع إدارة الجامعة.',
-        },
-        {'role': 'user', 'content': question},
-      ],
-      'max_tokens': 400,
-    }),
+  final result = await aiChatCompletion(
+    maxTokens: 400,
+    messages: [
+      {
+        'role': 'system',
+        'content':
+            'أنت مساعد تنقل ذكي للطلاب ذوي الإعاقة الحركية في الحرم الجامعي. '
+                'اعتمد على المعلومات التالية للإجابة:\n$_campusContext\n'
+                'أجب بإيجاز وبوضوح باللغة العربية. إذا لم تعرف الإجابة، اقترح التواصل مع إدارة الجامعة.',
+      },
+      {'role': 'user', 'content': question},
+    ],
   );
 
-  if (response.statusCode == 200) {
-    final data = jsonDecode(utf8.decode(response.bodyBytes));
-    return data['choices'][0]['message']['content'] as String;
-  } else {
-    return 'خطأ ${response.statusCode}: فشل الاتصال بـ GPT-4o';
-  }
+  return result.ok ? result.content! : result.error!;
 }
