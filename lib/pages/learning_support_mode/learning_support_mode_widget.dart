@@ -1,11 +1,8 @@
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
-import '/components/button/button_widget.dart';
-import '/components/mode_header/mode_header_widget.dart';
-import '/components/slider/slider_widget.dart';
-import '/components/text_block/text_block_widget.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/theme.dart';
+import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -42,6 +39,18 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     super.dispose();
   }
 
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message,
+            textAlign: TextAlign.end, style: AppText.body(color: AppColors.onNavy)),
+        backgroundColor: AppColors.navy,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
   Future<void> _pickPdfFile() async {
     FilePickerResult? result;
     try {
@@ -51,17 +60,18 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
         withData: true, // load bytes so cloud files (no local path) still work
       );
     } catch (e) {
-      // Cloud-backed files (e.g. OneDrive) can throw PlatformException
-      // (unknown_path). Don't crash — tell the user to pick a local file.
+      // Cloud-backed files (e.g. OneDrive) can throw PlatformException.
       debugPrint('file_picker failed: $e');
-      _showPickError();
+      _snack(
+          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).');
       return;
     }
     if (result == null) return; // user cancelled
 
     final file = result.files.single;
     if (file.bytes == null) {
-      _showPickError();
+      _snack(
+          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).');
       return;
     }
     safeSetState(() {
@@ -73,34 +83,11 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     });
   }
 
-  void _showPickError() {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          'تعذّر فتح الملف. يرجى اختيار ملف PDF محفوظ على الجهاز (وليس من التخزين السحابي مثل OneDrive).',
-          textAlign: TextAlign.end,
-          style: GoogleFonts.cairo(),
-        ),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-  }
-
   Future<void> _processDocument(String mode) async {
     if (!await ensureAiConsent(context)) return;
     if (!mounted) return;
     if (_model.pdfFileBytes == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            'يرجى اختيار ملف PDF أولاً',
-            textAlign: TextAlign.end,
-            style: GoogleFonts.cairo(),
-          ),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+      _snack('يرجى اختيار ملف PDF أولاً');
       return;
     }
 
@@ -123,439 +110,292 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   @override
   Widget build(BuildContext context) {
     context.watch<FFAppState>();
+    final hasDoc = (_model.pdfFileBytes != null);
 
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
-        body: Column(
-          mainAxisSize: MainAxisSize.max,
-          mainAxisAlignment: MainAxisAlignment.start,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            a11yButton(
-              label: 'رجوع',
-              child: InkWell(
-              splashColor: Colors.transparent,
-              focusColor: Colors.transparent,
-              hoverColor: Colors.transparent,
-              highlightColor: Colors.transparent,
-              onTap: () async {
-                context.pop();
-              },
-              child: wrapWithModel(
-                model: _model.modeHeaderModel,
-                updateCallback: () => safeSetState(() {}),
-                child: ModeHeaderWidget(
-                  icon: Icon(
-                    Icons.psychology_rounded,
-                    color: FlutterFlowTheme.of(context).primary,
-                  ),
-                  title: 'دعم التعلم',
-                ),
-              ),
-            ),
-            ),
-            // Scrollable content
-            Expanded(
-              flex: 1,
-              child: SingleChildScrollView(
-                primary: false,
-                child: Padding(
-                  padding: EdgeInsets.all(32.0),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Upload area
-                      Container(
-                        decoration: BoxDecoration(
-                          color: FlutterFlowTheme.of(context).primary,
-                          borderRadius: BorderRadius.circular(32.0),
-                          shape: BoxShape.rectangle,
-                        ),
-                        child: Padding(
-                          padding: EdgeInsets.all(40.0),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            mainAxisAlignment: MainAxisAlignment.start,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.cloud_upload_rounded,
-                                color:
-                                    FlutterFlowTheme.of(context).onPrimary,
-                                size: 48.0,
-                              ),
-                              Text(
-                                'رفع ملف PDF للمحاضرة',
-                                style: FlutterFlowTheme.of(context)
-                                    .titleMedium
-                                    .override(
-                                      font: GoogleFonts.cairo(
-                                          fontWeight: FontWeight.bold),
-                                      color: FlutterFlowTheme.of(context)
-                                          .onPrimary,
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.bold,
-                                      lineHeight: 1.4,
-                                    ),
-                              ),
-                              a11yButton(
-                                child: InkWell(
-                                splashColor: Colors.transparent,
-                                focusColor: Colors.transparent,
-                                hoverColor: Colors.transparent,
-                                highlightColor: Colors.transparent,
-                                onTap: _pickPdfFile,
-                                child: wrapWithModel(
-                                  model: _model.buttonModel,
-                                  updateCallback: () => safeSetState(() {}),
-                                  child: ButtonWidget(
-                                    content: 'اختر ملفاً',
-                                    iconPresent: false,
-                                    iconEndPresent: false,
-                                    variant: 'primary',
-                                    size: 'medium',
-                                    fullWidth: false,
-                                    loading: false,
-                                    disabled: false,
-                                  ),
-                                ),
-                              ),
-                              ),
-                            ].divide(SizedBox(height: 20.0)),
-                          ),
-                        ),
-                      ),
-                      // File name + text block
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        mainAxisAlignment: MainAxisAlignment.start,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment:
-                                MainAxisAlignment.spaceBetween,
-                            crossAxisAlignment: CrossAxisAlignment.center,
-                            children: [
-                              Container(
-                                height: 34.0,
-                                decoration: BoxDecoration(
-                                  color: FlutterFlowTheme.of(context)
-                                      .secondaryBackground,
-                                  borderRadius: BorderRadius.circular(16.0),
-                                  border: Border.all(
-                                    color: FlutterFlowTheme.of(context)
-                                        .alternate,
-                                    width: 1.0,
-                                  ),
-                                ),
-                                alignment: AlignmentDirectional(0.0, 0.0),
-                                child: Padding(
-                                  padding: EdgeInsetsDirectional.fromSTEB(
-                                      12.0, 0.0, 12.0, 0.0),
-                                  child: Text(
-                                    'قيد القراءة',
-                                    style: FlutterFlowTheme.of(context)
-                                        .labelMedium
-                                        .override(
-                                          font: GoogleFonts.cairo(),
-                                          color: FlutterFlowTheme.of(context)
-                                              .primaryText,
-                                          fontSize: 14.0,
-                                          letterSpacing: 0.0,
-                                          lineHeight: 1.4,
-                                        ),
-                                  ),
-                                ),
-                              ),
-                              Text(
-                                _model.currentDocName!,
-                                style: FlutterFlowTheme.of(context)
-                                    .labelMedium
-                                    .override(
-                                      font: GoogleFonts.cairo(),
-                                      color: FlutterFlowTheme.of(context)
-                                          .secondaryText,
-                                      letterSpacing: 0.0,
-                                      lineHeight: 1.4,
-                                    ),
-                              ),
-                            ],
-                          ),
-                          wrapWithModel(
-                            model: _model.textBlockModel,
-                            updateCallback: () => safeSetState(() {}),
-                            child: TextBlockWidget(
-                              size: FFAppState().readingFontSize,
-                              content: _model.extractedText,
-                            ),
-                          ),
-                        ].divide(SizedBox(height: 20.0)),
-                      ),
-                      // AI action buttons
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              Icon(
-                                Icons.auto_awesome_rounded,
-                                color: FlutterFlowTheme.of(context).primary,
-                                size: 18.0,
-                              ),
-                              SizedBox(width: 8.0),
-                              Text(
-                                'المساعد الذكي',
-                                style: FlutterFlowTheme.of(context)
-                                    .labelMedium
-                                    .override(
-                                      font: GoogleFonts.cairo(
-                                          fontWeight: FontWeight.bold),
-                                      color:
-                                          FlutterFlowTheme.of(context).primary,
-                                      letterSpacing: 0.0,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                              ),
-                            ],
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.max,
-                            children: [
-                              _AiActionButton(
-                                label: 'تلخيص',
-                                icon: Icons.summarize_rounded,
-                                isLoading: _model.isProcessing,
-                                onTap: () => _processDocument('summarize'),
-                              ),
-                              _AiActionButton(
-                                label: 'تبسيط',
-                                icon: Icons.lightbulb_outline_rounded,
-                                isLoading: _model.isProcessing,
-                                onTap: () => _processDocument('simplify'),
-                              ),
-                              _AiActionButton(
-                                label: 'أسئلة مراجعة',
-                                icon: Icons.quiz_rounded,
-                                isLoading: _model.isProcessing,
-                                onTap: () => _processDocument('quiz'),
-                              ),
-                            ].divide(SizedBox(width: 12.0)),
-                          ),
-                          // AI result
-                          if (_model.isProcessing)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .secondaryBackground,
-                                borderRadius: BorderRadius.circular(24.0),
-                                border: Border.all(
-                                  color:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(32.0),
-                                child: Center(
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      SizedBox(
-                                        width: 20.0,
-                                        height: 20.0,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.0,
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                        ),
-                                      ),
-                                      SizedBox(width: 12.0),
-                                      Text(
-                                        'جارٍ المعالجة...',
-                                        style: FlutterFlowTheme.of(context)
-                                            .bodyMedium
-                                            .override(
-                                              font: GoogleFonts.cairo(),
-                                              letterSpacing: 0.0,
-                                            ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          if (_model.aiResult != null && !_model.isProcessing)
-                            Container(
-                              decoration: BoxDecoration(
-                                color: FlutterFlowTheme.of(context)
-                                    .secondaryBackground,
-                                borderRadius: BorderRadius.circular(24.0),
-                                border: Border.all(
-                                  color:
-                                      FlutterFlowTheme.of(context).alternate,
-                                  width: 1.0,
-                                ),
-                              ),
-                              child: Padding(
-                                padding: EdgeInsets.all(24.0),
-                                child: Column(
-                                  crossAxisAlignment:
-                                      CrossAxisAlignment.end,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.end,
-                                      children: [
-                                        Text(
-                                          'نتيجة التحليل',
-                                          style: FlutterFlowTheme.of(context)
-                                              .labelMedium
-                                              .override(
-                                                font: GoogleFonts.cairo(
-                                                    fontWeight:
-                                                        FontWeight.bold),
-                                                color: FlutterFlowTheme.of(
-                                                        context)
-                                                    .primary,
-                                                letterSpacing: 0.0,
-                                                fontWeight: FontWeight.bold,
-                                              ),
-                                        ),
-                                        SizedBox(width: 8.0),
-                                        Icon(
-                                          Icons.auto_awesome_rounded,
-                                          color: FlutterFlowTheme.of(context)
-                                              .primary,
-                                          size: 18.0,
-                                        ),
-                                      ],
-                                    ),
-                                    SizedBox(height: 12.0),
-                                    a11yLive(Text(
-                                      _model.aiResult!,
-                                      textAlign: TextAlign.end,
-                                      style: FlutterFlowTheme.of(context)
-                                          .bodyMedium
-                                          .override(
-                                            font: GoogleFonts.cairo(),
-                                            fontSize: FFAppState()
-                                                        .readingFontSize <
-                                                    24.0
-                                                ? 24.0
-                                                : FFAppState().readingFontSize,
-                                            letterSpacing: 0.0,
-                                            lineHeight: 1.6,
-                                          ),
-                                    )),
-                                  ],
-                                ),
-                              ),
-                            ),
-                        ].divide(SizedBox(height: 16.0)),
-                      ),
-                    ].divide(SizedBox(height: 32.0)),
-                  ),
-                ),
-              ),
-            ),
-            // Font size slider
-            Container(
-              decoration: BoxDecoration(
-                color: FlutterFlowTheme.of(context).secondaryBackground,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(24.0),
-                  topRight: Radius.circular(24.0),
-                ),
-                shape: BoxShape.rectangle,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    height: 1.0,
-                    decoration: BoxDecoration(
-                      color: FlutterFlowTheme.of(context).alternate,
-                      shape: BoxShape.rectangle,
-                    ),
-                  ),
-                  Padding(
-                    padding: EdgeInsetsDirectional.fromSTEB(
-                        32.0, 40.0, 32.0, 40.0),
+    return Directionality(
+      textDirection: ui.TextDirection.rtl,
+      child: GestureDetector(
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          FocusManager.instance.primaryFocus?.unfocus();
+        },
+        child: Scaffold(
+          key: scaffoldKey,
+          backgroundColor: AppColors.cream,
+          body: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header('دعم التعلم', Icons.psychology_rounded),
+              Expanded(
+                child: SingleChildScrollView(
+                  primary: false,
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppSpacing.lg),
                     child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      mainAxisAlignment: MainAxisAlignment.start,
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Row(
-                          mainAxisSize: MainAxisSize.max,
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            Text(
-                              'حجم الخط',
-                              style: FlutterFlowTheme.of(context)
-                                  .titleSmall
-                                  .override(
-                                    font: GoogleFonts.cairo(),
-                                    color: FlutterFlowTheme.of(context)
-                                        .primaryText,
-                                    letterSpacing: 0.0,
-                                    lineHeight: 1.4,
+                        // Upload card
+                        Container(
+                          decoration: AppDecor.navyCard(),
+                          child: Padding(
+                            padding: const EdgeInsets.all(AppSpacing.xl),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.cloud_upload_rounded,
+                                    color: AppColors.onNavy, size: 48.0),
+                                const SizedBox(height: AppSpacing.md),
+                                Text('رفع ملف PDF للمحاضرة',
+                                    textAlign: TextAlign.center,
+                                    style: AppText.cardTitle()),
+                                const SizedBox(height: AppSpacing.lg),
+                                a11yButton(
+                                  label: 'اختر ملفاً',
+                                  child: Material(
+                                    color: AppColors.terracotta,
+                                    borderRadius: BorderRadius.circular(
+                                        AppSpacing.pill),
+                                    clipBehavior: Clip.antiAlias,
+                                    child: InkWell(
+                                      onTap: _pickPdfFile,
+                                      child: Padding(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: AppSpacing.xl,
+                                            vertical: 12.0),
+                                        child: Text('اختر ملفاً',
+                                            style: AppText.button(
+                                                color: AppColors.onNavy)),
+                                      ),
+                                    ),
                                   ),
+                                ),
+                              ],
                             ),
-                            Text(
-                              'كبير',
-                              style: FlutterFlowTheme.of(context)
-                                  .labelLarge
-                                  .override(
-                                    font: GoogleFonts.cairo(
-                                        fontWeight: FontWeight.bold),
-                                    color:
-                                        FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.bold,
-                                    lineHeight: 1.4,
-                                  ),
-                            ),
-                          ],
-                        ),
-                        wrapWithModel(
-                          model: _model.sliderModel,
-                          updateCallback: () => safeSetState(() {}),
-                          child: SliderWidget(
-                            label: 'حجم الخط',
-                            labelPresent: true,
-                            description: '',
-                            descriptionPresent: false,
-                            valuePercentage: FFAppState().readingFontSize,
-                            valueLabel: '',
-                            valueLabelPresent: false,
-                            step: 0.0,
-                            divisions: 0,
-                            color: FlutterFlowTheme.of(context).primary,
-                            variant: 'iOS',
-                            disabled: false,
-                            showTicks: true,
                           ),
                         ),
-                      ].divide(SizedBox(height: 20.0)),
+                        // Loaded file name
+                        if (hasDoc) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Row(
+                            children: [
+                              const Icon(Icons.description_outlined,
+                                  size: 18.0, color: AppColors.mutedOnCream),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: Text(
+                                  _model.currentDocName ?? '',
+                                  textAlign: TextAlign.end,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppText.label(color: AppColors.onCream),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                        const SizedBox(height: AppSpacing.lg),
+                        // Assistant section title
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text('المساعد الذكي',
+                                style: AppText.body(color: AppColors.onCream)),
+                            const SizedBox(width: AppSpacing.sm),
+                            const Icon(Icons.auto_awesome_rounded,
+                                color: AppColors.terracotta, size: 18.0),
+                          ],
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        // Assistant buttons
+                        IntrinsicHeight(
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Expanded(
+                                child: _AiActionButton(
+                                  label: 'تلخيص',
+                                  icon: Icons.summarize_rounded,
+                                  isLoading: _model.isProcessing,
+                                  onTap: () => _processDocument('summarize'),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: _AiActionButton(
+                                  label: 'تبسيط',
+                                  icon: Icons.lightbulb_outline_rounded,
+                                  isLoading: _model.isProcessing,
+                                  onTap: () => _processDocument('simplify'),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                              Expanded(
+                                child: _AiActionButton(
+                                  label: 'أسئلة مراجعة',
+                                  icon: Icons.quiz_rounded,
+                                  isLoading: _model.isProcessing,
+                                  onTap: () => _processDocument('quiz'),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Loading / result
+                        if (_model.isProcessing) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            decoration: AppDecor.creamCard(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.xl),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const SizedBox(
+                                    width: 20.0,
+                                    height: 20.0,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2.0,
+                                        color: AppColors.terracotta),
+                                  ),
+                                  const SizedBox(width: AppSpacing.md),
+                                  Text('جارٍ المعالجة...',
+                                      style: AppText.body()),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                        if (_model.aiResult != null && !_model.isProcessing) ...[
+                          const SizedBox(height: AppSpacing.md),
+                          Container(
+                            decoration: AppDecor.creamCard(),
+                            child: Padding(
+                              padding: const EdgeInsets.all(AppSpacing.lg),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      Text('النتيجة',
+                                          style: AppText.body(
+                                              color: AppColors.onCream)),
+                                      const SizedBox(width: AppSpacing.sm),
+                                      const Icon(Icons.auto_awesome_rounded,
+                                          color: AppColors.terracotta,
+                                          size: 18.0),
+                                    ],
+                                  ),
+                                  const SizedBox(height: AppSpacing.sm),
+                                  a11yLive(Text(
+                                    _model.aiResult!,
+                                    textAlign: TextAlign.end,
+                                    style: GoogleFonts.tajawal(
+                                      color: AppColors.onCream,
+                                      fontSize:
+                                          FFAppState().readingFontSize < 18.0
+                                              ? 18.0
+                                              : FFAppState().readingFontSize,
+                                      height: 1.6,
+                                    ),
+                                  )),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
                   ),
-                ],
+                ),
               ),
+              // Font-size slider panel (single label — no duplicate)
+              _sliderPanel(),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _header(String title, IconData icon) {
+    return Container(
+      color: AppColors.cream,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsetsDirectional.fromSTEB(
+                AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+            child: Row(
+              children: [
+                a11yButton(
+                  label: 'رجوع',
+                  child: SizedBox(
+                    width: 48.0,
+                    height: 48.0,
+                    child: IconButton(
+                      icon: const Icon(Icons.arrow_back_ios_rounded,
+                          color: AppColors.onCream, size: 22.0),
+                      onPressed: () => context.pop(),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Icon(icon, color: AppColors.terracotta, size: 22.0),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(title,
+                      textAlign: TextAlign.end, style: AppText.title()),
+                ),
+              ],
+            ),
+          ),
+          Container(height: 1.0, color: AppColors.border),
+        ],
+      ),
+    );
+  }
+
+  Widget _sliderPanel() {
+    final size = FFAppState().readingFontSize.clamp(14.0, 32.0);
+    return Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.only(
+          topLeft: Radius.circular(AppSpacing.lg),
+          topRight: Radius.circular(AppSpacing.lg),
+        ),
+        border: Border(top: BorderSide(color: AppColors.border)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(
+            AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text('حجم الخط', style: AppText.body(color: AppColors.onCream)),
+                Text('${size.round()}',
+                    style: AppText.body(color: AppColors.terracotta)),
+              ],
+            ),
+            Slider(
+              activeColor: AppColors.terracotta,
+              inactiveColor: AppColors.border,
+              value: size,
+              min: 14.0,
+              max: 32.0,
+              divisions: 9,
+              label: '${size.round()}',
+              onChanged: (val) {
+                FFAppState().update(() {
+                  FFAppState().readingFontSize = val;
+                });
+                safeSetState(() {});
+              },
             ),
           ],
         ),
@@ -579,49 +419,39 @@ class _AiActionButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: a11yButton(
-        enabled: !isLoading,
-        child: GestureDetector(
-        onTap: isLoading ? null : onTap,
-        child: Opacity(
-          opacity: isLoading ? 0.5 : 1.0,
-          child: Container(
-            decoration: BoxDecoration(
-              color: FlutterFlowTheme.of(context).primaryContainer,
-              borderRadius: BorderRadius.circular(16.0),
-              border: Border.all(
-                color: FlutterFlowTheme.of(context).primary,
-                width: 1.5,
+    return a11yButton(
+      enabled: !isLoading,
+      child: Opacity(
+        opacity: isLoading ? 0.5 : 1.0,
+        child: Material(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: isLoading ? null : onTap,
+            child: Container(
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+                border: Border.all(color: AppColors.navy, width: 1.5),
               ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.symmetric(vertical: 16.0, horizontal: 8.0),
+              padding: const EdgeInsets.symmetric(
+                  vertical: AppSpacing.md, horizontal: AppSpacing.sm),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    icon,
-                    color: FlutterFlowTheme.of(context).primary,
-                    size: 24.0,
-                  ),
-                  SizedBox(height: 6.0),
+                  Icon(icon, color: AppColors.navy, size: 24.0),
+                  const SizedBox(height: 6.0),
                   Text(
                     label,
                     textAlign: TextAlign.center,
-                    style: FlutterFlowTheme.of(context).labelSmall.override(
-                          font: GoogleFonts.cairo(fontWeight: FontWeight.bold),
-                          color: FlutterFlowTheme.of(context).primary,
-                          letterSpacing: 0.0,
-                          fontWeight: FontWeight.bold,
-                        ),
+                    maxLines: 2,
+                    style: AppText.label(color: AppColors.navy),
                   ),
                 ],
               ),
             ),
           ),
         ),
-      ),
       ),
     );
   }
