@@ -1,13 +1,12 @@
 import '/a11y.dart';
-import '/components/disability_card/disability_card_widget.dart';
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:provider/provider.dart';
 import 'welcome_selection_model.dart';
 export 'welcome_selection_model.dart';
 
@@ -46,258 +45,193 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
 
   @override
   Widget build(BuildContext context) {
-    context.watch<FFAppState>();
-
-    return GestureDetector(
-      onTap: () {
-        FocusScope.of(context).unfocus();
-        FocusManager.instance.primaryFocus?.unfocus();
-      },
+    return Directionality(
+      textDirection: ui.TextDirection.rtl,
       child: Scaffold(
         key: scaffoldKey,
-        backgroundColor: FlutterFlowTheme.of(context).primaryBackground,
+        backgroundColor: AppColors.cream,
         body: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              // Calculate row height dynamically to prevent overflow on any screen.
-              // Fixed overhead: header≈80 + gap12 + gap16 + gap16 + footer≈24 + padV40
-              const fixedOverhead = 80.0 + 12.0 + 16.0 + 16.0 + 24.0 + 40.0;
-              final rowH = ((constraints.maxHeight - fixedOverhead - 16.0) / 2)
-                  .clamp(110.0, 210.0);
-
-              return SingleChildScrollView(
-                padding:
-                    const EdgeInsets.fromLTRB(24.0, 20.0, 24.0, 16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    // Header — compact horizontal layout
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 48.0,
-                          height: 48.0,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16.0),
-                            border: Border.all(
-                              color: const Color(0xFF003651).withOpacity(0.15),
-                              width: 1.0,
-                            ),
-                          ),
-                          alignment: Alignment.center,
-                          child: Text(
-                            'ش',
-                            style: GoogleFonts.cairo(
-                              fontSize: 26.0,
-                              fontWeight: FontWeight.w900,
-                              color: const Color(0xFFC16325),
-                              height: 1.0,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12.0),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          mainAxisSize: MainAxisSize.min,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _header(),
+                const SizedBox(height: AppSpacing.xl),
+                Text(
+                  'اختر نوع الدعم الذي تحتاجه',
+                  textAlign: TextAlign.start,
+                  style: AppText.label(),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Expanded(
+                  child: Column(
+                    children: [
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            Text(
-                              'شادو — Shadow',
-                              style: FlutterFlowTheme.of(context)
-                                  .titleLarge
-                                  .override(
-                                    font: GoogleFonts.cairo(
-                                        fontWeight: FontWeight.w900),
-                                    color: FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.w900,
-                                    lineHeight: 1.2,
-                                  ),
+                            Expanded(
+                              child: _modeCard(
+                                icon: Icons.hearing_rounded,
+                                title: 'صمم / ضعف سمع',
+                                desc: 'ترجمة فورية للمحاضرات',
+                                route: DeafModeTranscriptionWidget.routeName,
+                              ),
                             ),
-                            Text(
-                              'مرافقك الأكاديمي الذكي',
-                              style: FlutterFlowTheme.of(context)
-                                  .bodySmall
-                                  .override(
-                                    font: GoogleFonts.cairo(),
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    letterSpacing: 0.0,
-                                    lineHeight: 1.3,
-                                  ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: _modeCard(
+                                icon: Icons.visibility_rounded,
+                                title: 'إعاقة بصرية',
+                                desc: 'وصف المحيط والنصوص',
+                                route: VisualAssistanceModeWidget.routeName,
+                              ),
                             ),
                           ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 12.0),
-                    // Row 1
-                    SizedBox(
-                      height: rowH,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: a11yButton(
-                              child: InkWell(
-                              splashColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              onTap: () => context.pushNamed(
-                                  DeafModeTranscriptionWidget.routeName),
-                              child: wrapWithModel(
-                                model: _model.disabilityCardModel1,
-                                updateCallback: () => safeSetState(() {}),
-                                child: DisabilityCardWidget(
-                                  selected: false,
-                                  colorBg: const Color(0xFFF5F0E8),
-                                  icon: const Icon(Icons.hearing_rounded,
-                                      size: 28.0,
-                                      color: Color(0xFF003651)),
-                                  colorFg: const Color(0xFF003651),
-                                  label: 'صمم / ضعف سمع',
-                                  description: 'ترجمة فورية للمحاضرات',
-                                ),
-                              ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16.0),
-                          Expanded(
-                            child: a11yButton(
-                              child: InkWell(
-                              splashColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              onTap: () => context.pushNamed(
-                                  VisualAssistanceModeWidget.routeName),
-                              child: wrapWithModel(
-                                model: _model.disabilityCardModel2,
-                                updateCallback: () => safeSetState(() {}),
-                                child: DisabilityCardWidget(
-                                  selected: false,
-                                  colorBg: const Color(0xFFF5F0E8),
-                                  icon: const Icon(Icons.visibility_rounded,
-                                      size: 28.0,
-                                      color: Color(0xFFC16325)),
-                                  colorFg: const Color(0xFFC16325),
-                                  label: 'إعاقة بصرية',
-                                  description: 'وصف المحيط والنصوص',
-                                ),
-                              ),
-                              ),
-                            ),
-                          ),
-                        ],
                       ),
-                    ),
-                    const SizedBox(height: 16.0),
-                    // Row 2
-                    SizedBox(
-                      height: rowH,
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: a11yButton(
-                              child: InkWell(
-                              splashColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              onTap: () => context.pushNamed(
-                                  LearningSupportModeWidget.routeName),
-                              child: wrapWithModel(
-                                model: _model.disabilityCardModel3,
-                                updateCallback: () => safeSetState(() {}),
-                                child: DisabilityCardWidget(
-                                  selected: false,
-                                  colorBg: const Color(0xFFF5F0E8),
-                                  icon: const Icon(Icons.psychology_rounded,
-                                      size: 28.0,
-                                      color: Color(0xFF003651)),
-                                  colorFg: const Color(0xFF003651),
-                                  label: 'صعوبات تعلم',
-                                  description: 'تبسيط المواد الدراسية',
-                                ),
-                              ),
+                      const SizedBox(height: AppSpacing.md),
+                      Expanded(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _modeCard(
+                                icon: Icons.menu_book_rounded,
+                                title: 'صعوبات تعلم',
+                                desc: 'تبسيط المواد الدراسية',
+                                route: LearningSupportModeWidget.routeName,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 16.0),
-                          Expanded(
-                            child: a11yButton(
-                              child: InkWell(
-                              splashColor: Colors.transparent,
-                              focusColor: Colors.transparent,
-                              hoverColor: Colors.transparent,
-                              highlightColor: Colors.transparent,
-                              onTap: () => context.pushNamed(
-                                  PhysicalAssistanceModeWidget.routeName),
-                              child: wrapWithModel(
-                                model: _model.disabilityCardModel4,
-                                updateCallback: () => safeSetState(() {}),
-                                child: DisabilityCardWidget(
-                                  selected: false,
-                                  colorBg: const Color(0xFFF5F0E8),
-                                  icon: const Icon(
-                                      Icons.accessible_forward_rounded,
-                                      size: 28.0,
-                                      color: Color(0xFFC16325)),
-                                  colorFg: const Color(0xFFC16325),
-                                  label: 'إعاقة حركية',
-                                  description: 'التحكم بالصوت',
-                                ),
-                              ),
+                            const SizedBox(width: AppSpacing.md),
+                            Expanded(
+                              child: _modeCard(
+                                icon: Icons.record_voice_over_rounded,
+                                title: 'إعاقة حركية',
+                                desc: 'التحكم بالصوت',
+                                route: PhysicalAssistanceModeWidget.routeName,
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 16.0),
-                    // Footer
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          'هل تحتاج إلى مساعدة؟',
-                          style:
-                              FlutterFlowTheme.of(context).bodySmall.override(
-                                    font: GoogleFonts.cairo(),
-                                    color: FlutterFlowTheme.of(context)
-                                        .secondaryText,
-                                    letterSpacing: 0.0,
-                                    lineHeight: 1.5,
-                                  ),
-                        ),
-                        const SizedBox(width: 8.0),
-                        Text(
-                          'اتصل بنا',
-                          style:
-                              FlutterFlowTheme.of(context).bodySmall.override(
-                                    font: GoogleFonts.cairo(
-                                        fontWeight: FontWeight.bold),
-                                    color:
-                                        FlutterFlowTheme.of(context).primary,
-                                    letterSpacing: 0.0,
-                                    fontWeight: FontWeight.bold,
-                                    decoration: TextDecoration.underline,
-                                    lineHeight: 1.5,
-                                  ),
-                        ),
-                      ],
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              );
-            },
+                const SizedBox(height: AppSpacing.md),
+                _footer(),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _header() {
+    return Row(
+      children: [
+        // Brand mark — the single terracotta accent on this screen.
+        Container(
+          width: 52.0,
+          height: 52.0,
+          decoration: BoxDecoration(
+            color: AppColors.navy,
+            borderRadius: BorderRadius.circular(14.0),
+          ),
+          alignment: Alignment.center,
+          child: Text(
+            'ش',
+            style: GoogleFonts.tajawal(
+              fontSize: 28.0,
+              fontWeight: FontWeight.w900,
+              color: AppColors.terracotta,
+              height: 1.0,
+            ),
+          ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text('شادو', style: AppText.display()),
+              Text('مرافقك الأكاديمي الذكي', style: AppText.label()),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _modeCard({
+    required IconData icon,
+    required String title,
+    required String desc,
+    required String route,
+  }) {
+    return a11yButton(
+      child: Material(
+        color: AppColors.navy,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => context.pushNamed(route),
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  width: 56.0,
+                  height: 56.0,
+                  decoration: const BoxDecoration(
+                    color: AppColors.surface,
+                    shape: BoxShape.circle,
+                  ),
+                  alignment: Alignment.center,
+                  child: Icon(icon, size: 28.0, color: AppColors.navy),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppText.cardTitle(),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Flexible(
+                  child: Text(
+                    desc,
+                    textAlign: TextAlign.center,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppText.label(color: AppColors.mutedOnNavy),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _footer() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('هل تحتاج إلى مساعدة؟ ', style: AppText.label()),
+        Text(
+          'تواصل معنا',
+          style: AppText.label(color: AppColors.onCream)
+              .copyWith(fontWeight: FontWeight.w700),
+        ),
+      ],
     );
   }
 }
