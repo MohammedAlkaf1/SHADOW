@@ -8,6 +8,7 @@ import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
+import '/style/category_widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -48,11 +49,19 @@ class _PhysicalAssistanceModeWidgetState
     super.dispose();
   }
 
-  void _snack(String message) {
+  /// [essential] messages (blocking errors) always show. Non-essential ones
+  /// are suppressed for the neurodevelopmental category
+  /// (StudentProfile.minimizesNotifications). Behavioral/emotional support
+  /// additionally softens harsh wording.
+  void _snack(String message, {required bool essential}) {
     if (!mounted) return;
+    final profile = StudentProfile.current;
+    if (!essential && profile.minimizesNotifications) return;
+    final text =
+        AppMessages.soften(message, enabled: profile.softensErrorMessages);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message,
+        content: Text(text,
             textAlign: TextAlign.end,
             style: AppText.body(color: AppColors.onNavy)),
         backgroundColor: AppColors.navy,
@@ -158,7 +167,7 @@ class _PhysicalAssistanceModeWidgetState
     final uri = Uri(scheme: 'tel', path: number);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
-      _snack('تعذّر بدء الاتصال بالرقم $number');
+      _snack('تعذّر بدء الاتصال بالرقم $number', essential: true);
     }
   }
 
@@ -417,33 +426,48 @@ class _PhysicalAssistanceModeWidgetState
                               ? AppColors.terracotta
                               : AppColors.onCream),
                     ),
+                    // Mild-cognitive support: permanent caption under the
+                    // primary action.
+                    if (StudentProfile.current.showsPermanentTooltips)
+                      permanentCaption('يسمع أمرك الصوتي وينفّذه'),
                     const SizedBox(height: AppSpacing.xl),
-                    // Commands section
-                    Text('الأوامر المدعومة',
-                        textAlign: TextAlign.end,
-                        style: AppText.body(color: AppColors.onCream)),
-                    const SizedBox(height: AppSpacing.md),
-                    ...commands.map(
-                      (cmd) => Padding(
-                        padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: AppSpacing.md, vertical: AppSpacing.md),
-                          decoration: AppDecor.creamCard(),
-                          child: Row(
-                            children: [
-                              Icon(cmd.icon,
-                                  color: AppColors.navy, size: 22.0),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: Text('"${cmd.label}"',
-                                    textAlign: TextAlign.end,
-                                    style:
-                                        AppText.body(color: AppColors.onCream)),
+                    // Commands section — hidden behind "خيارات" for
+                    // neurodevelopmental / mild-cognitive support.
+                    CollapsibleSecondaryActions(
+                      hidden: StudentProfile.current.hidesSecondaryActions,
+                      secondary: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Text('الأوامر المدعومة',
+                              textAlign: TextAlign.end,
+                              style: AppText.body(color: AppColors.onCream)),
+                          const SizedBox(height: AppSpacing.md),
+                          ...commands.map(
+                            (cmd) => Padding(
+                              padding:
+                                  const EdgeInsets.only(bottom: AppSpacing.sm),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: AppSpacing.md,
+                                    vertical: AppSpacing.md),
+                                decoration: AppDecor.creamCard(),
+                                child: Row(
+                                  children: [
+                                    Icon(cmd.icon,
+                                        color: AppColors.navy, size: 22.0),
+                                    const SizedBox(width: AppSpacing.md),
+                                    Expanded(
+                                      child: Text('"${cmd.label}"',
+                                          textAlign: TextAlign.end,
+                                          style: AppText.body(
+                                              color: AppColors.onCream)),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
+                            ),
                           ),
-                        ),
+                        ],
                       ),
                     ),
                   ],

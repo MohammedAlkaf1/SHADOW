@@ -99,6 +99,56 @@ class StudentProfile {
   bool get isModerate => supportLevel == SupportLevel.moderate;
   bool get isIntensive => supportLevel == SupportLevel.intensive;
 
+  // Category style rules (Phase 4 — طبقة التصنيف فوق مستوى الدعم). These are
+  // a UI-only style layer, separate from the Gemini prompt's "اضبط تركيزك حسب
+  // التصنيف" section (adaptive_prompts.dart) — do not merge the two.
+
+  /// Neurodevelopmental AND mild-cognitive: the plan states the same rule
+  /// twice under two different category headings ("لا يُعرض أكثر من عنصر
+  /// تفاعلي رئيسي واحد" / "الأزرار الثانوية مخفية افتراضياً؛ زر واحد رئيسي
+  /// فقط") — merged into one helper.
+  bool get hidesSecondaryActions =>
+      category == StudentCategory.neurodevelopmental ||
+      category == StudentCategory.mildCognitive;
+
+  /// Neurodevelopmental: no pulsing/bouncing animation (e.g. the deaf-mode
+  /// waveform) — render the same visual statically instead.
+  bool get usesStaticAnimations =>
+      category == StudentCategory.neurodevelopmental;
+
+  /// Neurodevelopmental: reduce in-app notifications (snackbars) to the
+  /// minimum — non-essential confirmations are suppressed; messages that
+  /// explain why something didn't work still show (see [AppMessages] call
+  /// sites: essential: true).
+  bool get minimizesNotifications =>
+      category == StudentCategory.neurodevelopmental;
+
+  /// Learning difficulties: a "اقرأ لي" (read aloud / TTS) button appears on
+  /// screens with long text.
+  bool get showsReadAloudButton =>
+      category == StudentCategory.learningDifficulties;
+
+  /// Learning difficulties: learning-support mode auto-runs the summary
+  /// action as soon as a document loads, no button press needed.
+  bool get autoSummarizesByDefault =>
+      category == StudentCategory.learningDifficulties;
+
+  /// Mild cognitive: every action button shows a permanent caption under it
+  /// explaining what it does (not a hover/long-press tooltip — always
+  /// visible).
+  bool get showsPermanentTooltips =>
+      category == StudentCategory.mildCognitive;
+
+  /// Communication/language: deaf mode only gets a "صياغة رسالة للأستاذ"
+  /// button (compose a polite message to the lecturer via Gemini).
+  bool get showsMessageAssistant =>
+      category == StudentCategory.communicationLanguage;
+
+  /// Behavioral/emotional: sharp failure wording is replaced with a
+  /// reassuring phrase (see AppMessages.soften in lib/theme.dart).
+  bool get softensErrorMessages =>
+      category == StudentCategory.behavioralEmotional;
+
   StudentProfile copyWith({
     StudentCategory? category,
     SupportLevel? supportLevel,

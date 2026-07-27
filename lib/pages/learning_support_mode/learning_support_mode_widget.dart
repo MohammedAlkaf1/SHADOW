@@ -1,6 +1,9 @@
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/student/student_profile.dart';
+import '/student/student_profile_provider.dart';
+import '/style/category_widgets.dart';
 import '/theme.dart';
 import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
@@ -27,6 +30,9 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
 
   final scaffoldKey = GlobalKey<ScaffoldState>();
 
+  // "اقرأ لي" (learning-difficulties only) on the AI result.
+  bool _isSpeakingResult = false;
+
   @override
   void initState() {
     super.initState();
@@ -39,11 +45,19 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     super.dispose();
   }
 
-  void _snack(String message) {
+  /// [essential] messages (blocking errors, guidance on why something didn't
+  /// happen) always show. Non-essential ones are suppressed for the
+  /// neurodevelopmental category (StudentProfile.minimizesNotifications).
+  /// Behavioral/emotional support additionally softens harsh wording.
+  void _snack(String message, {required bool essential}) {
     if (!mounted) return;
+    final profile = StudentProfile.current;
+    if (!essential && profile.minimizesNotifications) return;
+    final text =
+        AppMessages.soften(message, enabled: profile.softensErrorMessages);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message,
+        content: Text(text,
             textAlign: TextAlign.end, style: AppText.body(color: AppColors.onNavy)),
         backgroundColor: AppColors.navy,
         behavior: SnackBarBehavior.floating,
@@ -63,7 +77,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
       // Cloud-backed files (e.g. OneDrive) can throw PlatformException.
       debugPrint('file_picker failed: $e');
       _snack(
-          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).');
+          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).',
+          essential: true);
       return;
     }
     if (result == null) return; // user cancelled
@@ -71,7 +86,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     final file = result.files.single;
     if (file.bytes == null) {
       _snack(
-          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).');
+          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).',
+          essential: true);
       return;
     }
     safeSetState(() {
@@ -81,19 +97,25 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
       _model.aiResult = null;
       _model.extractedText = null;
     });
+
+    // Learning-difficulties: summarize automatically, no button press needed.
+    if (StudentProfile.current.autoSummarizesByDefault) {
+      await _processDocument('summarize');
+    }
   }
 
   Future<void> _processDocument(String mode) async {
     if (!await ensureAiConsent(context)) return;
     if (!mounted) return;
     if (_model.pdfFileBytes == null) {
-      _snack('يرجى اختيار ملف PDF أولاً');
+      _snack('يرجى اختيار ملف PDF أولاً', essential: true);
       return;
     }
 
     safeSetState(() {
       _model.isProcessing = true;
       _model.aiResult = null;
+      _isSpeakingResult = false;
     });
 
     final result = await actions.processDocumentWithGpt4o(
@@ -107,9 +129,23 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     });
   }
 
+  Future<void> _toggleReadAloud() async {
+    if (_isSpeakingResult) {
+      await actions.stopArabicSpeaking();
+      if (mounted) safeSetState(() => _isSpeakingResult = false);
+      return;
+    }
+    final text = _model.aiResult;
+    if (text == null || text.trim().isEmpty) return;
+    safeSetState(() => _isSpeakingResult = true);
+    await actions.speakArabicText(text);
+    if (mounted) safeSetState(() => _isSpeakingResult = false);
+  }
+
   @override
   Widget build(BuildContext context) {
     context.watch<FFAppState>();
+    context.watch<StudentProfileProvider>();
     final hasDoc = (_model.pdfFileBytes != null);
 
     return Directionality(
@@ -205,40 +241,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                           ],
                         ),
                         const SizedBox(height: AppSpacing.md),
-                        // Assistant buttons
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: _AiActionButton(
-                                  label: 'تلخيص',
-                                  icon: Icons.summarize_rounded,
-                                  isLoading: _model.isProcessing,
-                                  onTap: () => _processDocument('summarize'),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: _AiActionButton(
-                                  label: 'تبسيط',
-                                  icon: Icons.lightbulb_outline_rounded,
-                                  isLoading: _model.isProcessing,
-                                  onTap: () => _processDocument('simplify'),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                              Expanded(
-                                child: _AiActionButton(
-                                  label: 'أسئلة مراجعة',
-                                  icon: Icons.quiz_rounded,
-                                  isLoading: _model.isProcessing,
-                                  onTap: () => _processDocument('quiz'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _assistantButtons(),
                         // Loading / result
                         if (_model.isProcessing) ...[
                           const SizedBox(height: AppSpacing.md),
@@ -298,6 +301,33 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                       height: 1.6,
                                     ),
                                   )),
+                                  // "اقرأ لي" (learning-difficulties only).
+                                  if (StudentProfile.current
+                                      .showsReadAloudButton) ...[
+                                    const SizedBox(height: AppSpacing.sm),
+                                    a11yButton(
+                                      label: _isSpeakingResult
+                                          ? 'إيقاف القراءة'
+                                          : 'اقرأ لي النتيجة',
+                                      child: TextButton.icon(
+                                        onPressed: _toggleReadAloud,
+                                        icon: Icon(
+                                          _isSpeakingResult
+                                              ? Icons.stop_circle_outlined
+                                              : Icons.volume_up_rounded,
+                                          size: 16,
+                                          color: AppColors.terracotta,
+                                        ),
+                                        label: Text(
+                                          _isSpeakingResult
+                                              ? 'إيقاف القراءة'
+                                              : 'اقرأ لي',
+                                          style: AppText.label(
+                                              color: AppColors.terracotta),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ],
                               ),
                             ),
@@ -313,6 +343,71 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// All three buttons normally. Neurodevelopmental / mild cognitive support
+  /// (hidesSecondaryActions): only "تلخيص" (the primary action — also the
+  /// one auto-run for learning difficulties) stays directly visible;
+  /// "تبسيط" and "أسئلة مراجعة" move behind a quiet "خيارات" toggle.
+  Widget _assistantButtons() {
+    final tooltips = StudentProfile.current.showsPermanentTooltips;
+    final summarize = _AiActionButton(
+      label: 'تلخيص',
+      icon: Icons.summarize_rounded,
+      isLoading: _model.isProcessing,
+      onTap: () => _processDocument('summarize'),
+      caption: tooltips ? 'يعطيك أهم النقاط' : null,
+    );
+    final simplify = _AiActionButton(
+      label: 'تبسيط',
+      icon: Icons.lightbulb_outline_rounded,
+      isLoading: _model.isProcessing,
+      onTap: () => _processDocument('simplify'),
+      caption: tooltips ? 'يشرح المحتوى بأسلوب أسهل' : null,
+    );
+    final quiz = _AiActionButton(
+      label: 'أسئلة مراجعة',
+      icon: Icons.quiz_rounded,
+      isLoading: _model.isProcessing,
+      onTap: () => _processDocument('quiz'),
+      caption: tooltips ? 'يعطيك أسئلة للتدرّب' : null,
+    );
+
+    if (StudentProfile.current.hidesSecondaryActions) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          summarize,
+          const SizedBox(height: AppSpacing.sm),
+          CollapsibleSecondaryActions(
+            hidden: true,
+            secondary: IntrinsicHeight(
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: simplify),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(child: quiz),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: summarize),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: simplify),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(child: quiz),
+        ],
       ),
     );
   }
@@ -409,16 +504,18 @@ class _AiActionButton extends StatelessWidget {
     required this.icon,
     required this.isLoading,
     required this.onTap,
+    this.caption,
   });
 
   final String label;
   final IconData icon;
   final bool isLoading;
   final VoidCallback onTap;
+  final String? caption;
 
   @override
   Widget build(BuildContext context) {
-    return a11yButton(
+    final button = a11yButton(
       enabled: !isLoading,
       child: Opacity(
         opacity: isLoading ? 0.5 : 1.0,
@@ -452,6 +549,11 @@ class _AiActionButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+    if (caption == null) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [button, permanentCaption(caption!)],
     );
   }
 }

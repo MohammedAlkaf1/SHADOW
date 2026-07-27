@@ -89,6 +89,31 @@ class AppText {
       fontSize: 16, fontWeight: FontWeight.w700, height: 1.4, color: color);
 }
 
+/// Behavioral/emotional support (StudentProfile.softensErrorMessages):
+/// replaces sharp failure wording with a reassuring phrase before it reaches
+/// a snackbar/dialog. Substring match, so both a bare word and a full
+/// sentence containing it ("حدث خطأ أثناء...") are caught.
+class AppMessages {
+  AppMessages._();
+
+  static const Map<String, String> _softenedReplacements = {
+    'خطأ': 'لم يكتمل، جرّب مرة ثانية',
+    'فشل': 'لم يعمل الآن',
+    'لم يتم': 'لم يكتمل',
+  };
+
+  /// Returns [message] unchanged unless [enabled] (the active profile softens
+  /// error messages), in which case the first matching harsh phrase is
+  /// replaced with its reassuring counterpart.
+  static String soften(String message, {required bool enabled}) {
+    if (!enabled) return message;
+    for (final entry in _softenedReplacements.entries) {
+      if (message.contains(entry.key)) return entry.value;
+    }
+    return message;
+  }
+}
+
 /// Shared surface styles so every screen uses the same card look.
 class AppDecor {
   AppDecor._();

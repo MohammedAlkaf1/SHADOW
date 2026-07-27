@@ -2,11 +2,15 @@ import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/student/student_profile.dart';
+import '/student/student_profile_provider.dart';
+import '/style/category_widgets.dart';
 import '/theme.dart';
 import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:provider/provider.dart';
 import 'visual_assistance_mode_model.dart';
 export 'visual_assistance_mode_model.dart';
 
@@ -85,6 +89,7 @@ class _VisualAssistanceModeWidgetState
 
   @override
   Widget build(BuildContext context) {
+    context.watch<StudentProfileProvider>();
     final analyzing = _model.isAnalyzing;
     return Directionality(
       textDirection: ui.TextDirection.rtl,
@@ -230,33 +235,7 @@ class _VisualAssistanceModeWidgetState
                           _resultCard(),
                         ],
                         const SizedBox(height: AppSpacing.lg),
-                        // Action cards. IntrinsicHeight gives the stretched Row a
-                        // bounded height inside the scroll view (equal-height
-                        // cards) — plain stretch here forces infinite height.
-                        IntrinsicHeight(
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              Expanded(
-                                child: _actionCard(
-                                  icon: Icons.visibility_rounded,
-                                  label: 'صف المحيط',
-                                  enabled: !analyzing,
-                                  onTap: () => _captureAndAnalyze('describe'),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.md),
-                              Expanded(
-                                child: _actionCard(
-                                  icon: Icons.text_fields_rounded,
-                                  label: 'اقرأ النص',
-                                  enabled: !analyzing,
-                                  onTap: () => _captureAndAnalyze('read_text'),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
+                        _actionsSection(analyzing),
                         const SizedBox(height: AppSpacing.md),
                         // Instruction
                         Row(
@@ -282,6 +261,53 @@ class _VisualAssistanceModeWidgetState
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// Both action cards side by side normally. Neurodevelopmental / mild
+  /// cognitive support (hidesSecondaryActions): only "صف المحيط" (the
+  /// primary action) stays visible directly; "اقرأ النص" moves behind a
+  /// quiet "خيارات" toggle.
+  Widget _actionsSection(bool analyzing) {
+    final tooltips = StudentProfile.current.showsPermanentTooltips;
+    final describeCard = _actionCard(
+      icon: Icons.visibility_rounded,
+      label: 'صف المحيط',
+      enabled: !analyzing,
+      onTap: () => _captureAndAnalyze('describe'),
+      caption: tooltips ? 'يصف ما تراه الكاميرا' : null,
+    );
+    final readTextCard = _actionCard(
+      icon: Icons.text_fields_rounded,
+      label: 'اقرأ النص',
+      enabled: !analyzing,
+      onTap: () => _captureAndAnalyze('read_text'),
+      caption: tooltips ? 'يقرأ النص الموجود في الصورة' : null,
+    );
+
+    if (StudentProfile.current.hidesSecondaryActions) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          describeCard,
+          const SizedBox(height: AppSpacing.md),
+          CollapsibleSecondaryActions(hidden: true, secondary: readTextCard),
+        ],
+      );
+    }
+
+    // IntrinsicHeight gives the stretched Row a bounded height inside the
+    // scroll view (equal-height cards) — plain stretch here forces infinite
+    // height.
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Expanded(child: describeCard),
+          const SizedBox(width: AppSpacing.md),
+          Expanded(child: readTextCard),
+        ],
       ),
     );
   }
@@ -408,13 +434,16 @@ class _VisualAssistanceModeWidgetState
     );
   }
 
+  /// [caption] (mild-cognitive support) renders as a permanent label under
+  /// the card, outside its navy background — not a hover/long-press tooltip.
   Widget _actionCard({
     required IconData icon,
     required String label,
     required bool enabled,
     required VoidCallback onTap,
+    String? caption,
   }) {
-    return a11yButton(
+    final card = a11yButton(
       enabled: enabled,
       child: Opacity(
         opacity: enabled ? 1.0 : 0.5,
@@ -451,6 +480,11 @@ class _VisualAssistanceModeWidgetState
           ),
         ),
       ),
+    );
+    if (caption == null) return card;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [card, permanentCaption(caption)],
     );
   }
 }
