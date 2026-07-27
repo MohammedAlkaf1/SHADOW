@@ -40,13 +40,15 @@ Widget a11yLive(Widget child) =>
     Semantics(liveRegion: true, container: true, child: child);
 
 /// Back-navigation chevron that points the reading-correct way: left in LTR,
-/// right in RTL. Material's plain `Icons.arrow_back_ios` does not auto-mirror,
-/// so we flip it based on the ambient text direction.
-Widget appBackIcon(BuildContext context,
+/// right in RTL. Returns a plain [Icon] (not a Transform) so callers such as
+/// FlutterFlowIconButton — whose `icon` field is typed `Icon` — accept it; we
+/// pick the direction-correct glyph rather than flipping a widget.
+Icon appBackIcon(BuildContext context,
     {Color color = AppColors.onCream, double size = 22}) {
   final isRtl = Directionality.of(context) == TextDirection.rtl;
-  return Transform.flip(
-    flipX: isRtl,
-    child: Icon(Icons.arrow_back_ios_rounded, color: color, size: size),
+  return Icon(
+    isRtl ? Icons.arrow_forward_ios_rounded : Icons.arrow_back_ios_rounded,
+    color: color,
+    size: size,
   );
 }
