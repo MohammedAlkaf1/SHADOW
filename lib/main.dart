@@ -26,9 +26,7 @@ void main() async {
   runApp(MultiProvider(
     providers: [
       ChangeNotifierProvider(create: (context) => appState),
-      ChangeNotifierProvider(
-        create: (context) => StudentProfileProvider.fromEnvironment(),
-      ),
+      ChangeNotifierProvider(create: (context) => StudentProfileProvider()),
     ],
     child: MyApp(),
   ));

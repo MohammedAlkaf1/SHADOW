@@ -20,6 +20,23 @@ const String kAiModel = 'gemini-2.5-flash';
 // Read at build time from env.json via --dart-define-from-file.
 const String _kAiApiKey = String.fromEnvironment('GEMINI_API_KEY');
 
+/// Prepares an adaptive system prompt and injects it into [messages], ready
+/// for [aiChatCompletion]. Does not call Gemini and does not touch
+/// [aiChatCompletion] itself — callers build [systemPrompt] dynamically from
+/// the active StudentProfile (see lib/services/adaptive_prompts.dart) and
+/// pass it here. Any existing 'system' message in [messages] is replaced
+/// (callers should not pass one; the adaptive prompt is the single source of
+/// system-level instruction).
+List<Map<String, dynamic>> withAdaptiveSystemPrompt(
+  String systemPrompt,
+  List<Map<String, dynamic>> messages,
+) {
+  return [
+    {'role': 'system', 'content': systemPrompt},
+    ...messages.where((m) => m['role'] != 'system'),
+  ];
+}
+
 /// Result of an AI call: either [content] (success) or an Arabic [error].
 class AiResult {
   const AiResult._(this.content, this.error);

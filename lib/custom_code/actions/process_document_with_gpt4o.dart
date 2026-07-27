@@ -9,9 +9,18 @@ import 'package:flutter/material.dart';
 
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '/services/ai_client.dart';
+import '/services/adaptive_prompts.dart';
+import '/student/student_profile.dart';
 
 // Document processing via the swappable AI provider (currently Kimi/Moonshot).
 // Name kept for the existing callers; provider config lives in ai_client.dart.
+//
+// The old hardcoded per-action instruction ("لخص هذا في 5-7 نقاط...", always
+// the same regardless of student) is replaced by the adaptive system prompt,
+// which already fully specifies format per action + support level — keeping
+// both would conflict (e.g. a light-support "تلخيص" wants one short
+// paragraph, but the old text always demanded bullet points). The user
+// message now just states the action and hands over the document text.
 Future<String> processDocumentWithGpt4o({
   Uint8List? fileBytes,
   required String mode, // 'summarize' | 'simplify' | 'quiz'
@@ -32,26 +41,22 @@ Future<String> processDocumentWithGpt4o({
       ? extractedText.substring(0, 8000)
       : extractedText;
 
-  final prompt = switch (mode) {
-    'summarize' =>
-      'لخص هذا المحتوى الأكاديمي في ٥-٧ نقاط رئيسية باللغة العربية:\n\n$text',
-    'simplify' =>
-      'اشرح هذا المحتوى بأسلوب مبسط ومناسب لطلاب ذوي صعوبات التعلم باللغة العربية. استخدم جملاً قصيرة ومثالاً واحداً لكل فكرة:\n\n$text',
-    'quiz' =>
-      'اقترح ٥ أسئلة مراجعة قصيرة مع إجاباتها بناءً على هذا المحتوى باللغة العربية:\n\n$text',
-    _ => 'لخص هذا المحتوى باللغة العربية:\n\n$text',
+  final action = switch (mode) {
+    'summarize' => LearningAction.summarize,
+    'simplify' => LearningAction.simplify,
+    'quiz' => LearningAction.reviewQuestions,
+    _ => LearningAction.summarize,
   };
+
+  final systemPrompt = buildLearningPrompt(StudentProfile.current, action);
+  final userMessage =
+      'الإجراء المطلوب: ${action.arabicLabel}\n\nالمحتوى:\n$text';
 
   final result = await aiChatCompletion(
     maxTokens: 800,
-    messages: [
-      {
-        'role': 'system',
-        'content':
-            'أنت مساعد تعليمي متخصص في دعم الطلاب ذوي صعوبات التعلم. ردودك دائماً بالعربية.',
-      },
-      {'role': 'user', 'content': prompt},
-    ],
+    messages: withAdaptiveSystemPrompt(systemPrompt, [
+      {'role': 'user', 'content': userMessage},
+    ]),
   );
 
   return result.ok ? result.content! : result.error!;

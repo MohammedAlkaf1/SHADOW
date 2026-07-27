@@ -16,19 +16,9 @@ import '/theme.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 
-const Map<StudentCategory, String> _categoryLabels = {
-  StudentCategory.neurodevelopmental: 'اضطرابات النمو العصبي',
-  StudentCategory.learningDifficulties: 'صعوبات التعلم',
-  StudentCategory.mildCognitive: 'الإعاقات الإدراكية الخفيفة',
-  StudentCategory.communicationLanguage: 'اضطرابات التواصل واللغة',
-  StudentCategory.behavioralEmotional: 'الاضطرابات السلوكية والانفعالية',
-};
-
-const Map<SupportLevel, String> _supportLevelLabels = {
-  SupportLevel.light: 'دعم خفيف',
-  SupportLevel.moderate: 'دعم متوسط',
-  SupportLevel.intensive: 'دعم مكثف',
-};
+// Arabic labels now come from StudentCategoryArabic/SupportLevelArabic in
+// student_profile.dart (single source, shared with the adaptive Gemini
+// prompts in adaptive_prompts.dart) instead of a local copy here.
 
 class DevToolsPage extends StatelessWidget {
   const DevToolsPage({super.key});
@@ -152,7 +142,7 @@ class DevToolsPage extends StatelessWidget {
         if (v != null) provider.setCategory(v);
       },
       title: Text(
-        _categoryLabels[value]!,
+        value.arabicLabel,
         textAlign: TextAlign.end,
         style: AppText.body(),
       ),
@@ -174,7 +164,7 @@ class DevToolsPage extends StatelessWidget {
         if (v != null) provider.setSupportLevel(v);
       },
       title: Text(
-        _supportLevelLabels[value]!,
+        value.arabicLabel,
         textAlign: TextAlign.end,
         style: AppText.body(),
       ),

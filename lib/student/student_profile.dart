@@ -2,9 +2,8 @@
 // behaves for a given student. Values come from the specialist-reviewed
 // record on the platform (not yet built); until then they default or come
 // from --dart-define for testing. See docs/شادو_خطة_التكيف_الشاملة.md.
-//
-// Phase 1 only: this file defines the data model. Nothing reads it yet —
-// no mode UI and no Gemini prompt is adapted in this phase.
+
+import 'student_profile_provider.dart';
 
 /// The five general classifications a specialist can assign. Values match
 /// the plan document exactly; do not rename without updating the doc.
@@ -44,6 +43,27 @@ extension SupportLevelParsing on SupportLevel {
   }
 }
 
+/// The literal Arabic labels from docs/شادو_خطة_التكيف_الشاملة.md — used both
+/// inside adaptive Gemini prompts (student data block) and in the debug-only
+/// Developer Tools screen. Single source so the two never drift apart.
+extension StudentCategoryArabic on StudentCategory {
+  String get arabicLabel => switch (this) {
+        StudentCategory.neurodevelopmental => 'اضطرابات النمو العصبي',
+        StudentCategory.learningDifficulties => 'صعوبات التعلم',
+        StudentCategory.mildCognitive => 'الإعاقات الإدراكية الخفيفة',
+        StudentCategory.communicationLanguage => 'اضطرابات التواصل واللغة',
+        StudentCategory.behavioralEmotional => 'الاضطرابات السلوكية والانفعالية',
+      };
+}
+
+extension SupportLevelArabic on SupportLevel {
+  String get arabicLabel => switch (this) {
+        SupportLevel.light => 'دعم خفيف',
+        SupportLevel.moderate => 'دعم متوسط',
+        SupportLevel.intensive => 'دعم مكثف',
+      };
+}
+
 /// A student's adaptation profile: what to adapt for (category) and how
 /// strongly (support level). Immutable; use [copyWith] to change a field.
 class StudentProfile {
@@ -59,6 +79,14 @@ class StudentProfile {
     category: StudentCategory.learningDifficulties,
     supportLevel: SupportLevel.moderate,
   );
+
+  /// The active student's profile right now, read from the app-wide
+  /// [StudentProfileProvider] singleton. Lets non-widget code (custom_code
+  /// actions calling Gemini, which have no BuildContext) read the profile
+  /// without the level being threaded manually through every call —
+  /// mirrors how the project already reads FFAppState() outside the widget
+  /// tree.
+  static StudentProfile get current => StudentProfileProvider().profile;
 
   bool isOfCategory(StudentCategory other) => category == other;
 
