@@ -7,9 +7,14 @@ import 'dart:math';
 import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
+import '/services/ai_client.dart';
 import '/services/app_prefs.dart';
+import '/services/auto_summary_service.dart';
 import '/services/transcript_store.dart';
+import '/student/student_profile.dart';
+import '/student/student_profile_provider.dart';
 import 'saved_transcripts_page.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -40,6 +45,13 @@ class _DeafModeTranscriptionWidgetState
   // Guards against the record toggle firing twice during a transition.
   bool _recordBusy = false;
 
+  // Quiet auto-summary (moderate/intensive support only) — session-only, not
+  // persisted, and never touches FFAppState.liveText or the recording state.
+  final _autoSummaryService = AutoSummaryService();
+  String? _autoSummary;
+  bool _summaryPanelExpanded = false;
+  bool _summarizingNow = false;
+
   @override
   void initState() {
     super.initState();
@@ -56,13 +68,45 @@ class _DeafModeTranscriptionWidgetState
   @override
   void dispose() {
     _animController.dispose();
+    _autoSummaryService.dispose();
     _model.dispose();
     super.dispose();
+  }
+
+  void _onAutoSummary(String summary) {
+    if (!mounted) return;
+    safeSetState(() {
+      _autoSummary = summary;
+      _summarizingNow = false;
+    });
+  }
+
+  /// Manual "لخّص لي الآن" (intensive support only) — a deliberate tap, so it
+  /// goes through the full consent dialog (unlike the silent periodic ticks).
+  Future<void> _summarizeNow() async {
+    if (!await ensureAiConsent(context)) return;
+    if (!mounted) return;
+    safeSetState(() => _summarizingNow = true);
+    await _autoSummaryService.triggerNow();
+    if (mounted && _summarizingNow) {
+      safeSetState(() => _summarizingNow = false);
+    }
   }
 
   String get _currentText => FFAppState().liveText.isNotEmpty
       ? FFAppState().liveText
       : (_model.liveText ?? '');
+
+  /// Minimum live-transcript font size for the active support level (خفيف 16
+  /// / متوسط 18 / مكثف 22). The student's own settings-slider choice still
+  /// wins if it's larger — this only raises the floor, mirroring the
+  /// pre-existing "never smaller than 18" floor this replaces.
+  double get _levelDefaultFontSize =>
+      switch (StudentProfile.current.supportLevel) {
+        SupportLevel.light => 16.0,
+        SupportLevel.moderate => 18.0,
+        SupportLevel.intensive => 22.0,
+      };
 
   Future<void> _saveTranscript() async {
     final text = _currentText.trim();
@@ -181,6 +225,76 @@ class _DeafModeTranscriptionWidgetState
     );
   }
 
+  /// Live-transcript text. Intensive support additionally highlights
+  /// difficult terms in AppColors.terracotta, tappable for a simplified
+  /// Gemini definition in a bottom sheet.
+  ///
+  /// The plan mentions two kinds of difficult terms: "كلمات إنجليزية داخل
+  /// النص العربي" (English words inside Arabic text) and "مصطلحات غير شائعة"
+  /// (uncommon terms). Only the first is implemented — Latin-script runs are
+  /// reliably detectable; "uncommon" Arabic terms would need a frequency
+  /// wordlist this project doesn't have, and a naive heuristic (e.g. "long
+  /// Arabic words") would misflag ordinary vocabulary. Scope decision, not
+  /// an oversight.
+  Widget _buildTranscriptText() {
+    final style = GoogleFonts.tajawal(
+      color: AppColors.onCream,
+      fontSize: FFAppState().readingFontSize < _levelDefaultFontSize
+          ? _levelDefaultFontSize
+          : FFAppState().readingFontSize,
+      height: 1.6,
+    );
+
+    if (!StudentProfile.current.isIntensive || _currentText.isEmpty) {
+      return Text(_currentText, textAlign: TextAlign.end, style: style);
+    }
+
+    final matches = RegExp(r'[A-Za-z]{2,}').allMatches(_currentText);
+    final spans = <InlineSpan>[];
+    var cursor = 0;
+    for (final match in matches) {
+      if (match.start > cursor) {
+        spans.add(TextSpan(text: _currentText.substring(cursor, match.start)));
+      }
+      final term = match.group(0)!;
+      spans.add(TextSpan(
+        text: term,
+        style: const TextStyle(
+          color: AppColors.terracotta,
+          decoration: TextDecoration.underline,
+          fontWeight: FontWeight.w700,
+        ),
+        recognizer: TapGestureRecognizer()
+          ..onTap = () => _showTermDefinition(term),
+      ));
+      cursor = match.end;
+    }
+    if (cursor < _currentText.length) {
+      spans.add(TextSpan(text: _currentText.substring(cursor)));
+    }
+
+    return Text.rich(
+      TextSpan(style: style, children: spans),
+      textAlign: TextAlign.end,
+    );
+  }
+
+  /// Deliberate tap (unlike the silent periodic auto-summary), so it goes
+  /// through the full consent dialog.
+  Future<void> _showTermDefinition(String term) async {
+    if (!await ensureAiConsent(context)) return;
+    if (!mounted) return;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: AppColors.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius:
+            BorderRadius.vertical(top: Radius.circular(AppSpacing.cardRadius)),
+      ),
+      builder: (ctx) => _TermDefinitionSheet(term: term),
+    );
+  }
+
   Widget _buildWaveform(bool isRecording, double t) {
     const baseHeights = [12.0, 24.0, 40.0, 28.0, 16.0];
     const amplitudes = [8.0, 12.0, 10.0, 10.0, 6.0];
@@ -217,6 +331,10 @@ class _DeafModeTranscriptionWidgetState
   @override
   Widget build(BuildContext context) {
     context.watch<FFAppState>();
+    // Rebuild when the debug Developer Tools screen changes the active
+    // profile, so a manual level switch is reflected immediately without
+    // needing to leave and re-enter this screen.
+    context.watch<StudentProfileProvider>();
     final recording = FFAppState().isRecording;
 
     return Directionality(
@@ -335,23 +453,89 @@ class _DeafModeTranscriptionWidgetState
                                         AppText.label(color: AppColors.mutedOnCream),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
-                                  a11yLive(Text(
-                                    _currentText,
-                                    textAlign: TextAlign.end,
-                                    style: GoogleFonts.tajawal(
-                                      color: AppColors.onCream,
-                                      fontSize: FFAppState().readingFontSize < 18.0
-                                          ? 18.0
-                                          : FFAppState().readingFontSize,
-                                      height: 1.6,
-                                    ),
-                                  )),
+                                  a11yLive(_buildTranscriptText()),
                                 ],
                               ),
                             ),
                           ),
                         ),
                       ),
+                      // Quiet auto-summary (moderate/intensive only) — sits
+                      // below the live transcript, never interrupts it.
+                      if (StudentProfile.current
+                          .isAtLeast(SupportLevel.moderate)) ...[
+                        const SizedBox(height: AppSpacing.sm),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            if (StudentProfile.current.isIntensive) ...[
+                              a11yButton(
+                                label: 'لخّص لي الآن',
+                                enabled: !_summarizingNow,
+                                child: TextButton.icon(
+                                  onPressed:
+                                      _summarizingNow ? null : _summarizeNow,
+                                  icon: _summarizingNow
+                                      ? const SizedBox(
+                                          width: 14,
+                                          height: 14,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color: AppColors.terracotta),
+                                        )
+                                      : const Icon(Icons.bolt_rounded,
+                                          size: 16,
+                                          color: AppColors.terracotta),
+                                  label: Text('لخّص لي الآن',
+                                      style: AppText.label(
+                                          color: AppColors.terracotta)),
+                                ),
+                              ),
+                              const SizedBox(width: AppSpacing.sm),
+                            ],
+                            a11yButton(
+                              label: _autoSummary == null
+                                  ? 'لا يوجد ملخص بعد'
+                                  : (_summaryPanelExpanded
+                                      ? 'إخفاء الملخص'
+                                      : 'عرض آخر ملخص'),
+                              enabled: _autoSummary != null,
+                              child: TextButton.icon(
+                                onPressed: _autoSummary == null
+                                    ? null
+                                    : () => safeSetState(() =>
+                                        _summaryPanelExpanded =
+                                            !_summaryPanelExpanded),
+                                icon: Icon(
+                                  _summaryPanelExpanded
+                                      ? Icons.expand_less_rounded
+                                      : Icons.notes_rounded,
+                                  size: 16,
+                                  color: AppColors.mutedOnCream,
+                                ),
+                                label: Text(
+                                  _autoSummary == null
+                                      ? 'لا يوجد ملخص بعد'
+                                      : (_summaryPanelExpanded
+                                          ? 'إخفاء الملخص'
+                                          : 'عرض آخر ملخص'),
+                                  style: AppText.label(),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (_summaryPanelExpanded && _autoSummary != null)
+                          Container(
+                            margin: const EdgeInsets.only(top: AppSpacing.xs),
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(AppSpacing.md),
+                            decoration: AppDecor.creamCard(),
+                            child: a11yLive(Text(_autoSummary!,
+                                textAlign: TextAlign.end,
+                                style: AppText.body())),
+                          ),
+                      ],
                     ],
                   ),
                 ),
@@ -413,6 +597,17 @@ class _DeafModeTranscriptionWidgetState
                                   if (!await _ensureMicPermission()) return;
                                 }
                                 await actions.startRealtimeTranscription();
+                                // Start/stop the quiet auto-summary alongside
+                                // the recording it now tracks — never touches
+                                // the transcription itself either way.
+                                if (FFAppState().isRecording) {
+                                  _autoSummaryService.start(
+                                    latestText: () => _currentText,
+                                    onSummary: _onAutoSummary,
+                                  );
+                                } else {
+                                  _autoSummaryService.stop();
+                                }
                                 if (mounted) safeSetState(() {});
                               } finally {
                                 _recordBusy = false;
@@ -538,6 +733,91 @@ class _DeafModeTranscriptionWidgetState
             style: AppText.label(color: AppColors.mutedOnCream),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// Bottom sheet for the intensive-support difficult-term tap: fetches a
+/// short, simple definition from Gemini (a separate "simple prompt" call,
+/// not the vision/learning adaptive_prompts.dart machinery — matching how
+/// the plan describes these auxiliary calls).
+class _TermDefinitionSheet extends StatefulWidget {
+  const _TermDefinitionSheet({required this.term});
+
+  final String term;
+
+  @override
+  State<_TermDefinitionSheet> createState() => _TermDefinitionSheetState();
+}
+
+class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
+  String? _definition;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final result = await aiChatCompletion(
+      maxTokens: 150,
+      messages: [
+        {
+          'role': 'user',
+          'content':
+              'اشرح معنى المصطلح "${widget.term}" بجملة واحدة قصيرة جداً وبسيطة جداً بالعربية، مناسبة لطالب يحتاج دعماً مكثفاً.',
+        },
+      ],
+    );
+    if (!mounted) return;
+    setState(() {
+      if (result.ok) {
+        _definition = result.content;
+      } else {
+        _error = result.error;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 40,
+              height: 4,
+              margin: const EdgeInsets.only(bottom: AppSpacing.md),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: AppColors.border,
+                borderRadius: BorderRadius.circular(AppSpacing.pill),
+              ),
+            ),
+            Text(widget.term,
+                textAlign: TextAlign.end,
+                style: AppText.title(color: AppColors.terracotta)),
+            const SizedBox(height: AppSpacing.md),
+            if (_definition == null && _error == null)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+                child: Center(
+                  child:
+                      CircularProgressIndicator(color: AppColors.terracotta),
+                ),
+              )
+            else
+              a11yLive(Text(_definition ?? _error!,
+                  textAlign: TextAlign.end, style: AppText.body())),
+          ],
+        ),
       ),
     );
   }
