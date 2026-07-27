@@ -5,6 +5,7 @@ import '/theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'welcome_selection_model.dart';
@@ -222,15 +223,37 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
   }
 
   Widget _footer() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Text('هل تحتاج إلى مساعدة؟ ', style: AppText.label()),
-        Text(
-          'تواصل معنا',
-          style: AppText.label(color: AppColors.onCream)
-              .copyWith(fontWeight: FontWeight.w700),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('هل تحتاج إلى مساعدة؟ ', style: AppText.label()),
+            Text(
+              'تواصل معنا',
+              style: AppText.label(color: AppColors.onCream)
+                  .copyWith(fontWeight: FontWeight.w700),
+            ),
+          ],
         ),
+        // Debug-only entry point to the adaptation-engine test screen.
+        // kDebugMode is false in release/profile builds, so this never
+        // ships to students.
+        if (kDebugMode) ...[
+          const SizedBox(height: AppSpacing.sm),
+          a11yButton(
+            label: 'أدوات المطوّر',
+            child: TextButton.icon(
+              onPressed: () => context.pushNamed(DevToolsPage.routeName),
+              icon: const Icon(Icons.science_outlined,
+                  size: 16, color: AppColors.mutedOnCream),
+              label: Text('أدوات المطوّر',
+                  style: AppText.label().copyWith(
+                      decoration: TextDecoration.underline)),
+            ),
+          ),
+        ],
       ],
     );
   }

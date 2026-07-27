@@ -72,7 +72,12 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           name: WelcomeSelectionWidget.routeName,
           path: WelcomeSelectionWidget.routePath,
           builder: (context, params) => WelcomeSelectionWidget(),
-        )
+        ),
+        FFRoute(
+          name: DevToolsPage.routeName,
+          path: DevToolsPage.routePath,
+          builder: (context, params) => const DevToolsPage(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 
