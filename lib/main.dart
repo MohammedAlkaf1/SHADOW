@@ -78,7 +78,11 @@ class _MyAppState extends State<MyApp> {
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-      supportedLocales: const [Locale('en', '')],
+      // Arabic-first: forcing the app locale to 'ar' makes the ambient
+      // Directionality RTL for the entire widget tree (via WidgetsApp →
+      // Localizations), so every screen mirrors without per-widget wrappers.
+      locale: const Locale('ar'),
+      supportedLocales: const [Locale('ar'), Locale('en', '')],
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: false,

@@ -252,8 +252,7 @@ class _DeafModeTranscriptionWidgetState
                               borderRadius: 8.0,
                               buttonSize: 48.0,
                               fillColor: Colors.transparent,
-                              icon: const Icon(Icons.arrow_back_ios_rounded,
-                                  color: AppColors.onCream, size: 22.0),
+                              icon: appBackIcon(context),
                               onPressed: () async {
                                 context.pop();
                               },

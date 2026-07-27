@@ -4,7 +4,9 @@
 // reachable and correctly announced by screen readers (Android TalkBack). These
 // small wrappers keep that consistent without restructuring the FlutterFlow UI.
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
+
+import '/theme.dart';
 
 /// Wraps an interactive control so a screen reader announces it as one button.
 ///
@@ -36,3 +38,15 @@ Widget a11yButton({
 /// — e.g. an AI analysis result or a recognised voice command appearing.
 Widget a11yLive(Widget child) =>
     Semantics(liveRegion: true, container: true, child: child);
+
+/// Back-navigation chevron that points the reading-correct way: left in LTR,
+/// right in RTL. Material's plain `Icons.arrow_back_ios` does not auto-mirror,
+/// so we flip it based on the ambient text direction.
+Widget appBackIcon(BuildContext context,
+    {Color color = AppColors.onCream, double size = 22}) {
+  final isRtl = Directionality.of(context) == TextDirection.rtl;
+  return Transform.flip(
+    flipX: isRtl,
+    child: Icon(Icons.arrow_back_ios_rounded, color: color, size: size),
+  );
+}

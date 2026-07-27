@@ -334,8 +334,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                     width: 48.0,
                     height: 48.0,
                     child: IconButton(
-                      icon: const Icon(Icons.arrow_back_ios_rounded,
-                          color: AppColors.onCream, size: 22.0),
+                      icon: appBackIcon(context),
                       onPressed: () => context.pop(),
                     ),
                   ),
