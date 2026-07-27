@@ -8,10 +8,9 @@
 // The lecturer whose voice is captured is also a data subject.
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/a11y.dart';
-import '/flutter_flow/flutter_flow_theme.dart';
+import '/theme.dart';
 import '/services/app_prefs.dart';
 
 /// Ensures AI consent before running an AI feature. Returns true if the student
@@ -39,109 +38,110 @@ class ConsentScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = FlutterFlowTheme.of(context);
-    return Directionality(
-      textDirection: TextDirection.rtl,
-      child: PopScope(
-        canPop: false, // require an explicit choice
-        child: Scaffold(
-          backgroundColor: theme.primaryBackground,
-          body: SafeArea(
-            child: Padding(
-              padding: const EdgeInsets.all(24.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          const SizedBox(height: 8.0),
-                          Icon(Icons.privacy_tip_outlined,
-                              size: 44.0, color: theme.primary),
-                          const SizedBox(height: 16.0),
-                          Text(
-                            'الخصوصية والموافقة',
-                            textAlign: TextAlign.end,
-                            style: GoogleFonts.cairo(
-                                fontSize: 24.0, fontWeight: FontWeight.w900),
+    return PopScope(
+      canPop: false, // require an explicit choice
+      child: Scaffold(
+        backgroundColor: AppColors.cream,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        const SizedBox(height: AppSpacing.sm),
+                        Container(
+                          width: 64,
+                          height: 64,
+                          decoration: BoxDecoration(
+                            color: AppColors.navy,
+                            borderRadius:
+                                BorderRadius.circular(AppSpacing.cardRadius),
                           ),
-                          const SizedBox(height: 16.0),
-                          Text(
-                            'تستخدم بعض ميزات شادو خدمات خارجية (أطراف ثالثة) لتشغيل الذكاء الاصطناعي:',
-                            textAlign: TextAlign.end,
-                            style: GoogleFonts.cairo(fontSize: 16.0, height: 1.6),
-                          ),
-                          const SizedBox(height: 12.0),
-                          _bullet(context,
-                              'صوت المحاضرة يُرسل إلى خدمة Deepgram لتحويله إلى نص.'),
-                          _bullet(context,
-                              'الصور ونصوص ملفات PDF تُرسل إلى خدمة Google Gemini لوصفها وتبسيطها.'),
-                          const SizedBox(height: 16.0),
-                          _note(
-                            context,
-                            'قد يلتقط تسجيل الصوت صوت المُحاضِر، وهو أيضاً شخص معنيّ بحماية بياناته. استخدم الميزة بما يحترم خصوصيته.',
-                          ),
-                          const SizedBox(height: 12.0),
-                          _note(
-                            context,
-                            'لا تُرسل أي بيانات طبية أو سجلات إعاقة إلى هذه الخدمات، ولا يُرسل سوى ما تختاره أنت من صوت أو صور أو ملفات.',
-                          ),
-                          const SizedBox(height: 12.0),
-                          Text(
-                            'إذا لم توافق، تبقى ميزات الذكاء الاصطناعي متوقفة ويمكنك تفعيلها لاحقاً.',
-                            textAlign: TextAlign.end,
-                            style: GoogleFonts.cairo(
-                                fontSize: 14.0,
-                                color: theme.secondaryText,
-                                height: 1.6),
-                          ),
-                        ],
-                      ),
+                          alignment: Alignment.center,
+                          child: const Icon(Icons.privacy_tip_outlined,
+                              size: 34.0, color: AppColors.onNavy),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'الخصوصية والموافقة',
+                          textAlign: TextAlign.end,
+                          style: AppText.display(),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          'تستخدم بعض ميزات شادو خدمات خارجية (أطراف ثالثة) لتشغيل الذكاء الاصطناعي:',
+                          textAlign: TextAlign.end,
+                          style: AppText.body(),
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _bullet(
+                            'صوت المحاضرة يُرسل إلى خدمة Deepgram لتحويله إلى نص.'),
+                        _bullet(
+                            'الصور ونصوص ملفات PDF تُرسل إلى خدمة Google Gemini لوصفها وتبسيطها.'),
+                        const SizedBox(height: AppSpacing.md),
+                        _note(
+                          'قد يلتقط تسجيل الصوت صوت المُحاضِر، وهو أيضاً شخص معنيّ بحماية بياناته. استخدم الميزة بما يحترم خصوصيته.',
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        _note(
+                          'لا تُرسل أي بيانات طبية أو سجلات إعاقة إلى هذه الخدمات، ولا يُرسل سوى ما تختاره أنت من صوت أو صور أو ملفات.',
+                        ),
+                        const SizedBox(height: AppSpacing.sm),
+                        Text(
+                          'إذا لم توافق، تبقى ميزات الذكاء الاصطناعي متوقفة ويمكنك تفعيلها لاحقاً.',
+                          textAlign: TextAlign.end,
+                          style: AppText.label(),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 16.0),
-                  a11yButton(
-                    label: 'أوافق وأتابع',
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: theme.primary,
-                        foregroundColor: theme.onPrimary,
-                        minimumSize: const Size.fromHeight(52.0),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14.0)),
-                      ),
-                      onPressed: () async {
-                        await AppPrefs.setAiConsent(true);
-                        if (context.mounted) Navigator.of(context).pop(true);
-                      },
-                      child: Text('أوافق وأتابع',
-                          style:
-                              GoogleFonts.cairo(fontWeight: FontWeight.bold, fontSize: 16.0)),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                a11yButton(
+                  label: 'أوافق وأتابع',
+                  child: ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.navy,
+                      foregroundColor: AppColors.onNavy,
+                      minimumSize: const Size.fromHeight(52.0),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.cardRadius)),
                     ),
+                    onPressed: () async {
+                      await AppPrefs.setAiConsent(true);
+                      if (context.mounted) Navigator.of(context).pop(true);
+                    },
+                    child: Text('أوافق وأتابع',
+                        style: AppText.button(color: AppColors.onNavy)),
                   ),
-                  const SizedBox(height: 12.0),
-                  a11yButton(
-                    label: 'لا أوافق، تبقى ميزات الذكاء الاصطناعي متوقفة',
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: theme.primaryText,
-                        minimumSize: const Size.fromHeight(52.0),
-                        side: BorderSide(color: theme.alternate, width: 1.5),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(14.0)),
-                      ),
-                      onPressed: () async {
-                        await AppPrefs.setAiConsent(false);
-                        if (context.mounted) Navigator.of(context).pop(false);
-                      },
-                      child: Text('لا أوافق',
-                          style: GoogleFonts.cairo(fontSize: 16.0)),
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                a11yButton(
+                  label: 'لا أوافق، تبقى ميزات الذكاء الاصطناعي متوقفة',
+                  child: OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: AppColors.onCream,
+                      minimumSize: const Size.fromHeight(52.0),
+                      side: const BorderSide(color: AppColors.border, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.cardRadius)),
                     ),
+                    onPressed: () async {
+                      await AppPrefs.setAiConsent(false);
+                      if (context.mounted) Navigator.of(context).pop(false);
+                    },
+                    child: Text('لا أوافق',
+                        style: AppText.button(color: AppColors.onCream)),
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
@@ -149,41 +149,38 @@ class ConsentScreen extends StatelessWidget {
     );
   }
 
-  Widget _bullet(BuildContext context, String text) {
+  // Bullet leads on the right (RTL): dot first, then the text.
+  Widget _bullet(String text) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Text(text,
-                textAlign: TextAlign.end,
-                style: GoogleFonts.cairo(fontSize: 15.0, height: 1.6)),
+          const Padding(
+            padding: EdgeInsets.only(top: 8.0),
+            child: Icon(Icons.circle, size: 7.0, color: AppColors.terracotta),
           ),
-          const SizedBox(width: 8.0),
-          Padding(
-            padding: const EdgeInsets.only(top: 8.0),
-            child: Icon(Icons.circle,
-                size: 7.0, color: FlutterFlowTheme.of(context).primary),
+          const SizedBox(width: AppSpacing.sm),
+          Expanded(
+            child: Text(text, textAlign: TextAlign.end, style: AppText.body()),
           ),
         ],
       ),
     );
   }
 
-  Widget _note(BuildContext context, String text) {
-    final theme = FlutterFlowTheme.of(context);
+  Widget _note(String text) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14.0),
       decoration: BoxDecoration(
-        color: theme.secondaryBackground,
-        borderRadius: BorderRadius.circular(14.0),
-        border: Border.all(color: theme.alternate),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border),
       ),
       child: Text(text,
           textAlign: TextAlign.end,
-          style: GoogleFonts.cairo(fontSize: 14.0, height: 1.6)),
+          style: AppText.body(color: AppColors.mutedOnCream)),
     );
   }
 }
