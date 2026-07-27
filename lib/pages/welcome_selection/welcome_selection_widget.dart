@@ -1,6 +1,7 @@
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
+import '/services/mentor_triggers.dart';
 import '/theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -36,6 +37,9 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
         await showAiConsent(context);
       }
     });
+    // Silent: weekly usage report + 14-day missed-lectures check
+    // (moderate/intensive only). Never shown to the student.
+    MentorTriggers.onAppOpen();
   }
 
   @override

@@ -2,6 +2,8 @@ import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/services/mentor_log.dart';
+import '/services/mentor_triggers.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -32,10 +34,19 @@ class _VisualAssistanceModeWidgetState
   final scaffoldKey = GlobalKey<ScaffoldState>();
   final _imagePicker = ImagePicker();
 
+  // repeatedRequest (intensive only): counts how many times each action
+  // ('describe' / 'read_text') has been used this session. The plan's
+  // example is "same image re-analyzed 3 times"; the app has no "re-run last
+  // analysis" affordance to compare images against, so this approximates it
+  // as the same action button pressed ≥3 times in one visit to the screen —
+  // flagged as a scope decision in the Phase 5 report.
+  final Map<String, int> _actionCounts = {};
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => VisualAssistanceModeModel());
+    MentorTriggers.incrementModeOpen('visual');
   }
 
   @override
@@ -73,6 +84,19 @@ class _VisualAssistanceModeWidgetState
       _model.isAnalyzing = false;
       _model.analysisResult = result;
     });
+
+    if (StudentProfile.current.isIntensive) {
+      final count = (_actionCounts[mode] ?? 0) + 1;
+      _actionCounts[mode] = count;
+      if (count == 3) {
+        await MentorLog.instance.log(
+          mode: 'visual',
+          eventType: EventType.repeatedRequest,
+          severity: EventSeverity.immediate,
+          details: {'action': mode, 'count': count},
+        );
+      }
+    }
   }
 
   Future<void> _speakResult() async {

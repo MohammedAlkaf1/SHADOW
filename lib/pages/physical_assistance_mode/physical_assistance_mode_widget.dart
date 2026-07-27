@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '/a11y.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -6,6 +8,7 @@ import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
+import '/services/mentor_triggers.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -38,6 +41,7 @@ class _PhysicalAssistanceModeWidgetState
   void initState() {
     super.initState();
     _model = createModel(context, () => PhysicalAssistanceModeModel());
+    MentorTriggers.incrementModeOpen('physical');
     AppPrefs.getQuickContactNumber().then((value) {
       if (mounted) safeSetState(() => _quickContactNumber = value);
     });
@@ -168,7 +172,11 @@ class _PhysicalAssistanceModeWidgetState
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
       _snack('تعذّر بدء الاتصال بالرقم $number', essential: true);
+      return;
     }
+    // rapidQuickContact (intensive only) — only counts dials that actually
+    // launched, not failed attempts.
+    unawaited(MentorTriggers.recordQuickContactUse());
   }
 
   /// Add or edit the quick-contact number. Returns the saved number, or null.

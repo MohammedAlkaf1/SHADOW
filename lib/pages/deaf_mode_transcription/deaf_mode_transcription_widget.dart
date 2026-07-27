@@ -10,6 +10,8 @@ import '/pages/consent/consent_screen.dart';
 import '/services/ai_client.dart';
 import '/services/app_prefs.dart';
 import '/services/auto_summary_service.dart';
+import '/services/mentor_log.dart';
+import '/services/mentor_triggers.dart';
 import '/services/transcript_store.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
@@ -58,6 +60,10 @@ class _DeafModeTranscriptionWidgetState
   // used, unconditionally, by visual mode's "استمع للنتيجة").
   bool _isSpeakingTranscript = false;
 
+  // midSessionAbort (intensive only) — true once the current transcript has
+  // been explicitly saved via the "حفظ" button. Checked in dispose().
+  bool _transcriptSaved = false;
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +72,7 @@ class _DeafModeTranscriptionWidgetState
       vsync: this,
       duration: const Duration(milliseconds: 1000),
     )..repeat();
+    MentorTriggers.incrementModeOpen('deaf');
     // Enforce transcript retention (auto-expiry) on entry.
     AppPrefs.getRetentionDays()
         .then((days) => TranscriptStore.instance.purgeExpired(days));
@@ -73,6 +80,19 @@ class _DeafModeTranscriptionWidgetState
 
   @override
   void dispose() {
+    // midSessionAbort (intensive only): leaving with live text that was
+    // never explicitly saved. Fire-and-forget — dispose() can't be async,
+    // and this is silent to the student either way.
+    if (StudentProfile.current.isIntensive &&
+        !_transcriptSaved &&
+        _currentText.trim().isNotEmpty) {
+      MentorLog.instance.log(
+        mode: 'deaf',
+        eventType: EventType.midSessionAbort,
+        severity: EventSeverity.immediate,
+        details: {'was_recording': FFAppState().isRecording},
+      );
+    }
     _animController.dispose();
     _autoSummaryService.dispose();
     _model.dispose();
@@ -152,6 +172,7 @@ class _DeafModeTranscriptionWidgetState
       return;
     }
     await TranscriptStore.instance.save(text);
+    _transcriptSaved = true;
     _snack('تم حفظ النص', essential: false);
   }
 

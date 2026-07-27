@@ -1,6 +1,8 @@
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_util.dart';
+import '/services/mentor_log.dart';
+import '/services/mentor_triggers.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -33,10 +35,15 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   // "اقرأ لي" (learning-difficulties only) on the AI result.
   bool _isSpeakingResult = false;
 
+  // sameFileMultipleTimes (intensive only): counts "تبسيط" presses on the
+  // currently loaded file; reset whenever a new file is picked.
+  int _simplifyCountForCurrentFile = 0;
+
   @override
   void initState() {
     super.initState();
     _model = createModel(context, () => LearningSupportModeModel());
+    MentorTriggers.incrementModeOpen('learning');
   }
 
   @override
@@ -97,6 +104,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
       _model.aiResult = null;
       _model.extractedText = null;
     });
+    _simplifyCountForCurrentFile = 0;
 
     // Learning-difficulties: summarize automatically, no button press needed.
     if (StudentProfile.current.autoSummarizesByDefault) {
@@ -127,6 +135,22 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
       _model.isProcessing = false;
       _model.aiResult = result;
     });
+
+    // sameFileMultipleTimes (intensive only): "تبسيط" ≥5 times on this file.
+    if (mode == 'simplify' && StudentProfile.current.isIntensive) {
+      _simplifyCountForCurrentFile++;
+      if (_simplifyCountForCurrentFile == 5) {
+        await MentorLog.instance.log(
+          mode: 'learning',
+          eventType: EventType.sameFileMultipleTimes,
+          severity: EventSeverity.immediate,
+          details: {
+            'action': 'simplify',
+            'count': _simplifyCountForCurrentFile,
+          },
+        );
+      }
+    }
   }
 
   Future<void> _toggleReadAloud() async {
