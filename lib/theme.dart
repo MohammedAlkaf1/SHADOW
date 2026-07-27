@@ -53,29 +53,40 @@ class AppSpacing {
 class AppText {
   AppText._();
 
-  static TextStyle display({Color color = AppColors.onCream}) =>
+  // Arabic glyphs (e.g. the tall marks on ش/ت/ث) sit higher than Latin, so a
+  // tight line box clips their tops. `TextLeadingDistribution.even` splits the
+  // extra line height evenly above and below the glyphs instead of piling it
+  // under them, and the slightly taller `height` values give the ascenders room.
+  static TextStyle _tajawal({
+    required double fontSize,
+    required FontWeight fontWeight,
+    required double height,
+    required Color color,
+  }) =>
       GoogleFonts.tajawal(
-          fontSize: 26, fontWeight: FontWeight.w800, height: 1.25, color: color);
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: height,
+        color: color,
+      ).copyWith(leadingDistribution: TextLeadingDistribution.even);
 
-  static TextStyle title({Color color = AppColors.onCream}) =>
-      GoogleFonts.tajawal(
-          fontSize: 20, fontWeight: FontWeight.w700, height: 1.3, color: color);
+  static TextStyle display({Color color = AppColors.onCream}) => _tajawal(
+      fontSize: 26, fontWeight: FontWeight.w800, height: 1.4, color: color);
 
-  static TextStyle cardTitle({Color color = AppColors.onNavy}) =>
-      GoogleFonts.tajawal(
-          fontSize: 18, fontWeight: FontWeight.w700, height: 1.3, color: color);
+  static TextStyle title({Color color = AppColors.onCream}) => _tajawal(
+      fontSize: 20, fontWeight: FontWeight.w700, height: 1.45, color: color);
 
-  static TextStyle body({Color color = AppColors.onCream}) =>
-      GoogleFonts.tajawal(
-          fontSize: 15, fontWeight: FontWeight.w500, height: 1.6, color: color);
+  static TextStyle cardTitle({Color color = AppColors.onNavy}) => _tajawal(
+      fontSize: 18, fontWeight: FontWeight.w700, height: 1.4, color: color);
 
-  static TextStyle label({Color color = AppColors.mutedOnCream}) =>
-      GoogleFonts.tajawal(
-          fontSize: 13, fontWeight: FontWeight.w600, height: 1.4, color: color);
+  static TextStyle body({Color color = AppColors.onCream}) => _tajawal(
+      fontSize: 15, fontWeight: FontWeight.w500, height: 1.6, color: color);
 
-  static TextStyle button({Color color = AppColors.onNavy}) =>
-      GoogleFonts.tajawal(
-          fontSize: 16, fontWeight: FontWeight.w700, height: 1.2, color: color);
+  static TextStyle label({Color color = AppColors.mutedOnCream}) => _tajawal(
+      fontSize: 13, fontWeight: FontWeight.w600, height: 1.5, color: color);
+
+  static TextStyle button({Color color = AppColors.onNavy}) => _tajawal(
+      fontSize: 16, fontWeight: FontWeight.w700, height: 1.4, color: color);
 }
 
 /// Shared surface styles so every screen uses the same card look.
