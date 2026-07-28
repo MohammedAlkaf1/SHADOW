@@ -165,10 +165,30 @@ class _ProfileTab extends StatelessWidget {
       onChanged: (v) {
         if (v != null) provider.setCategory(v);
       },
-      title: Text(
-        value.arabicLabel,
-        textAlign: TextAlign.end,
-        style: AppText.body(),
+      // excludeSemantics: the visible two-line title (name + conditions)
+      // would otherwise be read with Flutter's default multi-Text join;
+      // this gives TalkBack the exact "name — conditions" phrasing a
+      // (possibly blind) advisor needs.
+      title: Semantics(
+        label: '${value.arabicLabel} — ${value.conditions}',
+        excludeSemantics: true,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              value.arabicLabel,
+              textAlign: TextAlign.end,
+              style: AppText.body(),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              value.conditions,
+              textAlign: TextAlign.end,
+              style: AppText.caption(),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -87,6 +87,11 @@ class AppText {
 
   static TextStyle button({Color color = AppColors.onNavy}) => _tajawal(
       fontSize: 16, fontWeight: FontWeight.w700, height: 1.4, color: color);
+
+  /// A secondary line under a primary label (e.g. sub-conditions under a
+  /// category name) — ~75% of [body]'s size, muted by default.
+  static TextStyle caption({Color color = AppColors.mutedOnCream}) => _tajawal(
+      fontSize: 11.25, fontWeight: FontWeight.w500, height: 1.4, color: color);
 }
 
 /// Behavioral/emotional support (StudentProfile.softensErrorMessages):

@@ -54,6 +54,22 @@ extension StudentCategoryArabic on StudentCategory {
         StudentCategory.communicationLanguage => 'اضطرابات التواصل واللغة',
         StudentCategory.behavioralEmotional => 'الاضطرابات السلوكية والانفعالية',
       };
+
+  /// The specific conditions each category covers — literal text from the
+  /// plan doc / the original classification file, not hardcoded per screen.
+  /// Kept here (not in the Developer Tools widget) so the platform's future
+  /// real advisor screen can reuse it verbatim.
+  String get conditions => switch (this) {
+        StudentCategory.neurodevelopmental =>
+          'التوحد، فرط الحركة وتشتت الانتباه',
+        StudentCategory.learningDifficulties =>
+          'صعوبات القراءة، الكتابة، الحساب، الفهم الأكاديمي',
+        StudentCategory.mildCognitive => 'الإعاقة الذهنية البسيطة',
+        StudentCategory.communicationLanguage =>
+          'صعوبات النطق، الفهم اللغوي، التعبير',
+        StudentCategory.behavioralEmotional =>
+          'مشكلات السلوك، الاندفاع، القلق داخل البيئة التعليمية',
+      };
 }
 
 extension SupportLevelArabic on SupportLevel {
