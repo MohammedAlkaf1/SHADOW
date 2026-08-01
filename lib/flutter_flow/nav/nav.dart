@@ -49,6 +49,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, _) => SplashScreenWidget(),
         ),
         FFRoute(
+          name: LoginWidget.routeName,
+          path: LoginWidget.routePath,
+          builder: (context, params) => LoginWidget(),
+        ),
+        FFRoute(
           name: DeafModeTranscriptionWidget.routeName,
           path: DeafModeTranscriptionWidget.routePath,
           builder: (context, params) => DeafModeTranscriptionWidget(),

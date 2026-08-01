@@ -1,5 +1,9 @@
+import 'package:provider/provider.dart';
+
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/services/platform_client.dart';
+import '/student/student_profile_provider.dart';
 import '/theme.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -18,11 +22,35 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
   @override
   void initState() {
     super.initState();
-    Future.delayed(const Duration(seconds: 2), () {
-      if (mounted) {
-        context.go(WelcomeSelectionWidget.routePath);
+    _decideNextRoute();
+  }
+
+  /// Keeps the splash's original ~2s minimum display time, but routes based
+  /// on whether a platform session is already cached: logged in -> hydrate
+  /// the profile (offline-first — getStudentProfile() falls back to cache on
+  /// its own, so this never hangs the splash screen waiting on a dead
+  /// network) and go straight to mode selection; not logged in -> the new
+  /// login screen.
+  Future<void> _decideNextRoute() async {
+    final delay = Future.delayed(const Duration(seconds: 2));
+    final loggedIn = await PlatformClient.isLoggedIn;
+
+    if (loggedIn) {
+      final profileResult = await PlatformClient.getStudentProfile();
+      if (mounted && profileResult.isSuccess) {
+        context.read<StudentProfileProvider>().applyPlatformProfile(
+              enabledTools: profileResult.data.enabledTools,
+              directives: profileResult.data.directives,
+            );
       }
-    });
+      PlatformClient.startAutoFlushTimer();
+    }
+
+    await delay;
+    if (!mounted) return;
+    context.go(
+      loggedIn ? WelcomeSelectionWidget.routePath : LoginWidget.routePath,
+    );
   }
 
   @override

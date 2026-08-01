@@ -2,6 +2,8 @@ import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
 import '/services/mentor_triggers.dart';
+import '/student/student_profile.dart';
+import '/student/student_profile_provider.dart';
 import '/theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -9,6 +11,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import 'welcome_selection_model.dart';
 export 'welcome_selection_model.dart';
 
@@ -50,6 +53,11 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
 
   @override
   Widget build(BuildContext context) {
+    // Rebuild when the platform-fetched profile/directives change (login,
+    // or a background profile refresh) so mode gating stays live.
+    context.watch<StudentProfileProvider>();
+    final profile = StudentProfile.current;
+
     return Directionality(
       textDirection: ui.TextDirection.rtl,
       child: Scaffold(
@@ -78,21 +86,27 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
-                              child: _modeCard(
-                                icon: Icons.hearing_rounded,
-                                title: 'صمم / ضعف سمع',
-                                desc: 'ترجمة فورية للمحاضرات',
-                                route: DeafModeTranscriptionWidget.routeName,
-                              ),
+                              child: _isModeEnabled(profile, 'DEAF_MODE')
+                                  ? _modeCard(
+                                      icon: Icons.hearing_rounded,
+                                      title: 'صمم / ضعف سمع',
+                                      desc: 'ترجمة فورية للمحاضرات',
+                                      route:
+                                          DeafModeTranscriptionWidget.routeName,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
-                              child: _modeCard(
-                                icon: Icons.visibility_rounded,
-                                title: 'إعاقة بصرية',
-                                desc: 'وصف المحيط والنصوص',
-                                route: VisualAssistanceModeWidget.routeName,
-                              ),
+                              child: _isModeEnabled(profile, 'VISUAL_MODE')
+                                  ? _modeCard(
+                                      icon: Icons.visibility_rounded,
+                                      title: 'إعاقة بصرية',
+                                      desc: 'وصف المحيط والنصوص',
+                                      route:
+                                          VisualAssistanceModeWidget.routeName,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ],
                         ),
@@ -103,21 +117,27 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             Expanded(
-                              child: _modeCard(
-                                icon: Icons.menu_book_rounded,
-                                title: 'صعوبات تعلم',
-                                desc: 'تبسيط المواد الدراسية',
-                                route: LearningSupportModeWidget.routeName,
-                              ),
+                              child: _isModeEnabled(profile, 'LEARNING_MODE')
+                                  ? _modeCard(
+                                      icon: Icons.menu_book_rounded,
+                                      title: 'صعوبات تعلم',
+                                      desc: 'تبسيط المواد الدراسية',
+                                      route:
+                                          LearningSupportModeWidget.routeName,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                             const SizedBox(width: AppSpacing.md),
                             Expanded(
-                              child: _modeCard(
-                                icon: Icons.record_voice_over_rounded,
-                                title: 'إعاقة حركية',
-                                desc: 'التحكم بالصوت',
-                                route: PhysicalAssistanceModeWidget.routeName,
-                              ),
+                              child: _isModeEnabled(profile, 'PHYSICAL_MODE')
+                                  ? _modeCard(
+                                      icon: Icons.record_voice_over_rounded,
+                                      title: 'إعاقة حركية',
+                                      desc: 'التحكم بالصوت',
+                                      route: PhysicalAssistanceModeWidget
+                                          .routeName,
+                                    )
+                                  : const SizedBox.shrink(),
                             ),
                           ],
                         ),
@@ -170,6 +190,15 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
         ),
       ],
     );
+  }
+
+  /// A mode's card only hides once we actually have a platform-fetched
+  /// profile to gate against (`isPlatformLinked`) — before login, offline
+  /// with nothing cached yet, or in dev-tools/demo mode, every mode stays
+  /// visible (fail-open), matching this screen's original behavior.
+  bool _isModeEnabled(StudentProfile profile, String toolCode) {
+    if (!profile.isPlatformLinked) return true;
+    return profile.enabledTools.contains(toolCode);
   }
 
   Widget _modeCard({

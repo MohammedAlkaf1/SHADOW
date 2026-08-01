@@ -9,6 +9,7 @@
 import 'package:flutter/foundation.dart';
 
 import 'student_profile.dart';
+import '/services/adaptation_directives.dart';
 
 class StudentProfileProvider extends ChangeNotifier {
   static StudentProfileProvider _instance =
@@ -51,6 +52,37 @@ class StudentProfileProvider extends ChangeNotifier {
   void setSupportLevel(SupportLevel level) {
     if (level == _profile.supportLevel) return;
     _profile = _profile.copyWith(supportLevel: level);
+    notifyListeners();
+  }
+
+  /// Hydrates this profile from a real platform fetch (or a locally cached
+  /// copy of one — see PlatformClient.getStudentProfile). This is what makes
+  /// a logged-in real student's profile stop being locally-computed from the
+  /// category/supportLevel enums: from this point on, every StudentProfile
+  /// getter that has a directives-aware branch will use [directives]
+  /// instead. [category]/[supportLevel] themselves are left at whatever they
+  /// were (dev-tools default) — they're no longer the source of truth once
+  /// [directives] is set, but keeping them avoids making them nullable
+  /// throughout the codebase.
+  void applyPlatformProfile({
+    required List<String> enabledTools,
+    required AdaptationDirectives directives,
+  }) {
+    _profile = _profile.copyWith(
+      enabledTools: enabledTools,
+      directives: directives,
+    );
+    notifyListeners();
+  }
+
+  /// Reverts to the local enum-based profile — used on logout so a stale
+  /// platform session's directives don't linger for whichever demo/dev
+  /// profile comes next.
+  void clearPlatformProfile() {
+    _profile = StudentProfile(
+      category: _profile.category,
+      supportLevel: _profile.supportLevel,
+    );
     notifyListeners();
   }
 }

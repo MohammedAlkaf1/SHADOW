@@ -1,6 +1,7 @@
 // Export pages
 export '/pages/splash_screen/splash_screen_widget.dart'
     show SplashScreenWidget;
+export '/pages/login/login_widget.dart' show LoginWidget;
 export '/pages/dev_tools/dev_tools_page.dart' show DevToolsPage;
 export '/pages/deaf_mode_transcription/deaf_mode_transcription_widget.dart'
     show DeafModeTranscriptionWidget;
