@@ -1,0 +1,305 @@
+// HTTP client for the Shadow Platform backend (D:\Shadow\platform,
+// docs/API.md). Talks to the platform's Bearer-JWT `/api/*` endpoints —
+// completely separate from the Deepgram/Gemini calls in ai_client.dart,
+// which this file never touches.
+//
+// Design notes:
+// - Follows the same convention as ai_client.dart: plain `package:http`
+//   calls, no persistent client, results returned as a success/failure
+//   wrapper (never throws) so callers don't need try/catch everywhere.
+// - Offline-first: every read goes through AppPrefs' cache first as a
+//   fallback. A failed network call never blocks a mode from working — it
+//   just means the app keeps using the last-known-good profile/directives.
+// - Usage events are buffered locally and flushed as a batch (never one
+//   HTTP call per event) — see queueUsageEvent/flushQueuedEvents.
+// - Never sends audio, images, or PDF content — only abstract event
+//   metadata (eventType + a small JSON payload with no transcript/PII).
+
+import 'dart:async';
+import 'dart:convert';
+
+import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
+
+import 'app_prefs.dart';
+import 'adaptation_directives.dart';
+
+/// `--dart-define-from-file=env.json` value, defaulting to the local dev
+/// server. See env.example.json / README.
+const String kPlatformBaseUrl = String.fromEnvironment(
+  'PLATFORM_BASE_URL',
+  defaultValue: 'http://localhost:3000/api',
+);
+
+/// Generic success/failure result — mirrors AiResult's shape in
+/// ai_client.dart so callers across the app follow one convention.
+class PlatformResult<T> {
+  const PlatformResult.success(T data)
+      : _data = data,
+        errorMessage = null;
+  const PlatformResult.failure(this.errorMessage) : _data = null;
+
+  final T? _data;
+  final String? errorMessage;
+
+  bool get isSuccess => errorMessage == null;
+  T get data => _data as T;
+}
+
+class StudentPlatformProfile {
+  const StudentPlatformProfile({
+    required this.enabledTools,
+    required this.directives,
+    required this.raw,
+  });
+
+  final List<String> enabledTools;
+  final AdaptationDirectives directives;
+
+  /// The full decoded JSON response — cached verbatim so a later offline
+  /// read can reconstruct this object without re-deriving anything.
+  final Map<String, dynamic> raw;
+
+  factory StudentPlatformProfile.fromJson(Map<String, dynamic> json) =>
+      StudentPlatformProfile(
+        enabledTools: (json['enabledTools'] as List?)
+                ?.map((e) => e.toString())
+                .toList() ??
+            const [],
+        directives: AdaptationDirectives.fromJson(
+            json['adaptationDirectives'] as Map<String, dynamic>? ?? const {}),
+        raw: json,
+      );
+}
+
+class PlatformClient {
+  PlatformClient._();
+
+  static Timer? _flushTimer;
+  static final List<Map<String, dynamic>> _memoryQueue = [];
+  static bool _memoryQueueLoaded = false;
+
+  // ── Auth ─────────────────────────────────────────────────────────────
+
+  static Uri _uri(String path) => Uri.parse('$kPlatformBaseUrl$path');
+
+  static Future<PlatformResult<void>> login(
+      String email, String password) async {
+    try {
+      final response = await http
+          .post(
+            _uri('/auth/login'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'email': email, 'password': password}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode != 200) {
+        return PlatformResult.failure(_extractError(
+            response, 'تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.'));
+      }
+
+      final body = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      await AppPrefs.setAccessToken(body['accessToken'] as String);
+      await AppPrefs.setRefreshToken(body['refreshToken'] as String);
+      return const PlatformResult.success(null);
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient.login failed: $e');
+      return const PlatformResult.failure(
+          'تعذر الاتصال بالمنصة. تحقق من اتصالك بالإنترنت.');
+    }
+  }
+
+  static Future<bool> refreshToken() async {
+    final refresh = await AppPrefs.getRefreshToken();
+    if (refresh == null) return false;
+    try {
+      final response = await http
+          .post(
+            _uri('/auth/refresh'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'refreshToken': refresh}),
+          )
+          .timeout(const Duration(seconds: 15));
+      if (response.statusCode != 200) return false;
+      final body = jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
+      await AppPrefs.setAccessToken(body['accessToken'] as String);
+      return true;
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient.refreshToken failed: $e');
+      return false;
+    }
+  }
+
+  static Future<bool> get isLoggedIn async =>
+      (await AppPrefs.getAccessToken()) != null;
+
+  static Future<void> logout() async {
+    await AppPrefs.clearSession();
+    _flushTimer?.cancel();
+    _flushTimer = null;
+  }
+
+  // ── Student profile / support plan (offline-first) ──────────────────
+
+  /// Fetches the student's profile+directives from the platform. On any
+  /// network/auth failure, falls back to the last cached copy (if any) so
+  /// the app keeps working offline — a failed call here must never block a
+  /// mode. Returns failure only when there's NEITHER a fresh fetch NOR a
+  /// cache to fall back to (e.g. first-ever launch with no connectivity).
+  static Future<PlatformResult<StudentPlatformProfile>>
+      getStudentProfile() async {
+    final fresh = await _authedGet('/student/profile');
+    if (fresh != null) {
+      await AppPrefs.setCachedProfileJson(fresh);
+      return PlatformResult.success(StudentPlatformProfile.fromJson(fresh));
+    }
+
+    final cachedJson = await AppPrefs.getCachedProfileJson();
+    if (cachedJson != null) {
+      try {
+        final decoded = jsonDecode(cachedJson) as Map<String, dynamic>;
+        return PlatformResult.success(
+            StudentPlatformProfile.fromJson(decoded));
+      } catch (e) {
+        debugPrint('⚠️ PlatformClient: failed to parse cached profile: $e');
+      }
+    }
+
+    return const PlatformResult.failure(
+        'تعذر جلب بيانات الملف الشخصي من المنصة، ولا توجد نسخة محفوظة سابقاً.');
+  }
+
+  static Future<PlatformResult<Map<String, dynamic>>> getSupportPlan() async {
+    final json = await _authedGet('/student/support-plan');
+    if (json == null) {
+      return const PlatformResult.failure('تعذر جلب خطة الدعم من المنصة.');
+    }
+    return PlatformResult.success(json);
+  }
+
+  // ── Usage events (buffered, batched, offline-safe) ──────────────────
+
+  /// Queues one usage event locally; does NOT send it immediately. Flushed
+  /// as a batch every 60 seconds (see [startAutoFlushTimer]) or when a mode
+  /// screen calls [flushQueuedEvents] on close, whichever happens first.
+  /// Never include audio/image/PDF content in [payload] — abstract metadata
+  /// only (event type, mode name, tool name, error type — no transcripts,
+  /// no PII).
+  static Future<void> queueUsageEvent(
+    String eventType, {
+    Map<String, dynamic>? payload,
+  }) async {
+    await _ensureQueueLoaded();
+    _memoryQueue.add({
+      'eventType': eventType,
+      if (payload != null) 'payload': payload,
+      'occurredAt': DateTime.now().toUtc().toIso8601String(),
+    });
+    await AppPrefs.setQueuedEvents(_memoryQueue);
+  }
+
+  static Future<void> _ensureQueueLoaded() async {
+    if (_memoryQueueLoaded) return;
+    _memoryQueue.addAll(await AppPrefs.getQueuedEvents());
+    _memoryQueueLoaded = true;
+  }
+
+  /// Sends every queued event as one batch POST /api/events. On success the
+  /// queue is cleared. On failure (offline, server error, rate-limited) the
+  /// queue is left intact for the next trigger — no aggressive retry loop,
+  /// just "try again next time something calls flush".
+  static Future<void> flushQueuedEvents() async {
+    await _ensureQueueLoaded();
+    if (_memoryQueue.isEmpty) return;
+
+    final token = await AppPrefs.getAccessToken();
+    if (token == null) return; // not logged in — nothing to flush against
+
+    final batch = List<Map<String, dynamic>>.from(_memoryQueue);
+    try {
+      final response = await http
+          .post(
+            _uri('/events'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+            },
+            body: jsonEncode({'events': batch}),
+          )
+          .timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 200) {
+        _memoryQueue.removeRange(0, batch.length);
+        await AppPrefs.setQueuedEvents(_memoryQueue);
+      } else if (response.statusCode == 401) {
+        // Access token expired — refresh once and let the NEXT flush retry;
+        // avoids retry-looping within this call.
+        await refreshToken();
+      }
+      // Any other status (429 rate-limited, 5xx, etc.): leave queued,
+      // try again on the next scheduled/triggered flush.
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient.flushQueuedEvents failed (will retry later): $e');
+    }
+  }
+
+  /// Starts the 60-second auto-flush timer. Idempotent — safe to call from
+  /// multiple places (e.g. app startup and after login); only one timer is
+  /// ever active.
+  static void startAutoFlushTimer() {
+    _flushTimer ??= Timer.periodic(const Duration(seconds: 60), (_) {
+      flushQueuedEvents();
+    });
+  }
+
+  static void stopAutoFlushTimer() {
+    _flushTimer?.cancel();
+    _flushTimer = null;
+  }
+
+  // ── Internal helpers ─────────────────────────────────────────────────
+
+  /// GETs an authenticated endpoint, transparently retrying once after a
+  /// token refresh on 401. Returns null on any failure (network error,
+  /// non-200 after retry, etc.) — callers fall back to cache.
+  static Future<Map<String, dynamic>?> _authedGet(String path) async {
+    final token = await AppPrefs.getAccessToken();
+    if (token == null) return null;
+
+    try {
+      var response = await http.get(
+        _uri(path),
+        headers: {'Authorization': 'Bearer $token'},
+      ).timeout(const Duration(seconds: 15));
+
+      if (response.statusCode == 401) {
+        final refreshed = await refreshToken();
+        if (!refreshed) return null;
+        final newToken = await AppPrefs.getAccessToken();
+        response = await http.get(
+          _uri(path),
+          headers: {'Authorization': 'Bearer $newToken'},
+        ).timeout(const Duration(seconds: 15));
+      }
+
+      if (response.statusCode != 200) return null;
+      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient: GET $path failed: $e');
+      return null;
+    }
+  }
+
+  static String _extractError(http.Response response, String fallback) {
+    try {
+      final body = jsonDecode(utf8.decode(response.bodyBytes));
+      if (body is Map && body['error'] is String) return body['error'] as String;
+    } catch (_) {
+      // fall through to fallback
+    }
+    return fallback;
+  }
+}
