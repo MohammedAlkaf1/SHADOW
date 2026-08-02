@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/services/mentor_log.dart';
 import '/services/mentor_triggers.dart';
 import '/services/platform_client.dart';
+import '/services/technical_terms_corrector.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -137,7 +138,10 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
 
     safeSetState(() {
       _model.isProcessing = false;
-      _model.aiResult = result;
+      // Simplified/summarized academic text can still contain technical
+      // terms Gemini kept in Arabic phonetic form; correct once here so
+      // both the on-screen result and "اقرأ لي" TTS see the fixed text.
+      _model.aiResult = correctTechnicalTerms(result);
     });
 
     // sameFileMultipleTimes (intensive only): "تبسيط" ≥5 times on this file.

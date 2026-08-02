@@ -13,6 +13,7 @@ import '/services/auto_summary_service.dart';
 import '/services/mentor_log.dart';
 import '/services/mentor_triggers.dart';
 import '/services/platform_client.dart';
+import '/services/technical_terms_corrector.dart';
 import '/services/transcript_store.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
@@ -125,9 +126,12 @@ class _DeafModeTranscriptionWidgetState
     }
   }
 
-  String get _currentText => FFAppState().liveText.isNotEmpty
-      ? FFAppState().liveText
-      : (_model.liveText ?? '');
+  // Corrected once here so every consumer (display, save, copy, TTS,
+  // auto-summary input) sees the same fixed-up text — not just the screen.
+  String get _currentText => correctTechnicalTerms(
+      FFAppState().liveText.isNotEmpty
+          ? FFAppState().liveText
+          : (_model.liveText ?? ''));
 
   Future<void> _toggleReadAloud() async {
     if (_isSpeakingTranscript) {
