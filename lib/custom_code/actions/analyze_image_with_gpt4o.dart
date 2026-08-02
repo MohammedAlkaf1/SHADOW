@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'dart:convert';
 import '/services/ai_client.dart';
 import '/services/adaptive_prompts.dart';
+import '/services/platform_client.dart';
 import '/student/student_profile.dart';
 
 // Vision analysis via the swappable AI provider (currently Kimi/Moonshot).
@@ -52,5 +53,11 @@ Future<String> analyzeImageWithGpt4o({
     ]),
   );
 
+  if (!result.ok) {
+    // Abstract metadata only — provider + a short error-type label, never
+    // the request/response content itself.
+    PlatformClient.queueUsageEvent('provider_error',
+        payload: {'provider': 'gemini', 'errorType': 'vision_analysis_failed'});
+  }
   return result.ok ? result.content! : result.error!;
 }

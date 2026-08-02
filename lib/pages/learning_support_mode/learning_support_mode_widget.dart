@@ -3,6 +3,7 @@ import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/services/mentor_log.dart';
 import '/services/mentor_triggers.dart';
+import '/services/platform_client.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -44,10 +45,13 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     super.initState();
     _model = createModel(context, () => LearningSupportModeModel());
     MentorTriggers.incrementModeOpen('learning');
+    PlatformClient.queueUsageEvent('mode_opened',
+        payload: {'mode': 'learning'});
   }
 
   @override
   void dispose() {
+    PlatformClient.flushQueuedEvents();
     _model.dispose();
     super.dispose();
   }

@@ -4,6 +4,7 @@ import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/services/mentor_log.dart';
 import '/services/mentor_triggers.dart';
+import '/services/platform_client.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -47,10 +48,12 @@ class _VisualAssistanceModeWidgetState
     super.initState();
     _model = createModel(context, () => VisualAssistanceModeModel());
     MentorTriggers.incrementModeOpen('visual');
+    PlatformClient.queueUsageEvent('mode_opened', payload: {'mode': 'visual'});
   }
 
   @override
   void dispose() {
+    PlatformClient.flushQueuedEvents();
     _model.dispose();
     super.dispose();
   }
@@ -84,6 +87,8 @@ class _VisualAssistanceModeWidgetState
       _model.isAnalyzing = false;
       _model.analysisResult = result;
     });
+    PlatformClient.queueUsageEvent('tool_used',
+        payload: {'mode': 'visual', 'tool': mode});
 
     if (StudentProfile.current.isIntensive) {
       final count = (_actionCounts[mode] ?? 0) + 1;

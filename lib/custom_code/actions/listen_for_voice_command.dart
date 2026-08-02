@@ -18,12 +18,12 @@ const String _cmdApiKey = String.fromEnvironment('DEEPGRAM_API_KEY');
 
 // Listening window before giving up and using whatever was captured so far —
 // longer for higher support levels so students who need more time to speak
-// (or who repeat themselves) aren't cut off early.
-Duration _listeningTimeoutFor(SupportLevel level) => switch (level) {
-      SupportLevel.light => const Duration(seconds: 3),
-      SupportLevel.moderate => const Duration(seconds: 5),
-      SupportLevel.intensive => const Duration(seconds: 8),
-    };
+// (or who repeat themselves) aren't cut off early. Sourced from the
+// platform's adaptation directives when a real session is loaded (see
+// StudentProfile.physicalModeListeningDurationSeconds), else the same local
+// enum-based values as before.
+Duration _listeningTimeoutFor(StudentProfile profile) =>
+    Duration(seconds: profile.physicalModeListeningDurationSeconds);
 
 Future<String> listenForVoiceCommand() async {
   final recorder = AudioRecorder();
@@ -74,8 +74,7 @@ Future<String> listenForVoiceCommand() async {
   stream.listen((data) => channel.sink.add(data));
 
   // Timeout: stop after the level-appropriate listening window regardless.
-  Future.delayed(_listeningTimeoutFor(StudentProfile.current.supportLevel),
-      () async {
+  Future.delayed(_listeningTimeoutFor(StudentProfile.current), () async {
     if (!completer.isCompleted) {
       await recorder.stop();
       channel.sink.close();

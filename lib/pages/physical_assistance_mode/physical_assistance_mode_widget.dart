@@ -9,6 +9,7 @@ import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
 import '/services/mentor_triggers.dart';
+import '/services/platform_client.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
@@ -42,6 +43,8 @@ class _PhysicalAssistanceModeWidgetState
     super.initState();
     _model = createModel(context, () => PhysicalAssistanceModeModel());
     MentorTriggers.incrementModeOpen('physical');
+    PlatformClient.queueUsageEvent('mode_opened',
+        payload: {'mode': 'physical'});
     AppPrefs.getQuickContactNumber().then((value) {
       if (mounted) safeSetState(() => _quickContactNumber = value);
     });
@@ -49,6 +52,7 @@ class _PhysicalAssistanceModeWidgetState
 
   @override
   void dispose() {
+    PlatformClient.flushQueuedEvents();
     _model.dispose();
     super.dispose();
   }
@@ -95,6 +99,8 @@ class _PhysicalAssistanceModeWidgetState
       if (!confirmed) return;
     }
 
+    PlatformClient.queueUsageEvent('tool_used',
+        payload: {'mode': 'physical', 'tool': 'voice_command'});
     _dispatchVoiceCommand(command);
   }
 
@@ -168,6 +174,8 @@ class _PhysicalAssistanceModeWidgetState
   }
 
   Future<void> _dial(String number) async {
+    PlatformClient.queueUsageEvent('tool_used',
+        payload: {'mode': 'physical', 'tool': 'quick_contact'});
     final uri = Uri(scheme: 'tel', path: number);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
@@ -282,11 +290,7 @@ class _PhysicalAssistanceModeWidgetState
               ? 'لم يتم تعيين رقم بعد، اضغط للإضافة'
               : 'اتصال بالرقم المحفوظ',
           child: Transform.scale(
-            scale: switch (StudentProfile.current.supportLevel) {
-              SupportLevel.light => 1.0,
-              SupportLevel.moderate => 1.3,
-              SupportLevel.intensive => 1.6,
-            },
+            scale: StudentProfile.current.physicalModeQuickContactScale,
             child: FloatingActionButton.extended(
               onPressed: _quickContact,
               backgroundColor: AppColors.navy,

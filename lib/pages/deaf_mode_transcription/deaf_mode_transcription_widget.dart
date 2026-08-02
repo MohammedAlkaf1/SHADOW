@@ -12,6 +12,7 @@ import '/services/app_prefs.dart';
 import '/services/auto_summary_service.dart';
 import '/services/mentor_log.dart';
 import '/services/mentor_triggers.dart';
+import '/services/platform_client.dart';
 import '/services/transcript_store.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
@@ -73,6 +74,8 @@ class _DeafModeTranscriptionWidgetState
       duration: const Duration(milliseconds: 1000),
     )..repeat();
     MentorTriggers.incrementModeOpen('deaf');
+    // Platform usage event (abstract metadata only — no transcript/PII).
+    PlatformClient.queueUsageEvent('mode_opened', payload: {'mode': 'deaf'});
     // Enforce transcript retention (auto-expiry) on entry.
     AppPrefs.getRetentionDays()
         .then((days) => TranscriptStore.instance.purgeExpired(days));
@@ -93,6 +96,9 @@ class _DeafModeTranscriptionWidgetState
         details: {'was_recording': FFAppState().isRecording},
       );
     }
+    // Flush buffered platform usage events on mode close (per the buffering
+    // policy: every 60s OR on mode close, whichever first). Fire-and-forget.
+    PlatformClient.flushQueuedEvents();
     _animController.dispose();
     _autoSummaryService.dispose();
     _model.dispose();
@@ -132,6 +138,8 @@ class _DeafModeTranscriptionWidgetState
     final text = _currentText.trim();
     if (text.isEmpty) return;
     safeSetState(() => _isSpeakingTranscript = true);
+    PlatformClient.queueUsageEvent('tool_used',
+        payload: {'mode': 'deaf', 'tool': 'TEXT_TO_SPEECH'});
     await actions.speakArabicText(text);
     if (mounted) safeSetState(() => _isSpeakingTranscript = false);
   }
@@ -142,6 +150,8 @@ class _DeafModeTranscriptionWidgetState
   Future<void> _openMessageAssistant() async {
     if (!await ensureAiConsent(context)) return;
     if (!mounted) return;
+    PlatformClient.queueUsageEvent('tool_used',
+        payload: {'mode': 'deaf', 'tool': 'message_assistant'});
     showModalBottomSheet<void>(
       context: context,
       isScrollControlled: true,
@@ -156,14 +166,11 @@ class _DeafModeTranscriptionWidgetState
 
   /// Minimum live-transcript font size for the active support level (خفيف 16
   /// / متوسط 18 / مكثف 22). The student's own settings-slider choice still
-  /// wins if it's larger — this only raises the floor, mirroring the
-  /// pre-existing "never smaller than 18" floor this replaces.
-  double get _levelDefaultFontSize =>
-      switch (StudentProfile.current.supportLevel) {
-        SupportLevel.light => 16.0,
-        SupportLevel.moderate => 18.0,
-        SupportLevel.intensive => 22.0,
-      };
+  /// wins if it's larger — this only raises the floor. Sourced from the
+  /// platform's adaptation directives when a real session is loaded (see
+  /// StudentProfile.deafModeFontSize), else the same local enum switch as
+  /// before.
+  double get _levelDefaultFontSize => StudentProfile.current.deafModeFontSize;
 
   Future<void> _saveTranscript() async {
     final text = _currentText.trim();

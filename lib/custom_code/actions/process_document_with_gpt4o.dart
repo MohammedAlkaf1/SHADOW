@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 import 'package:syncfusion_flutter_pdf/pdf.dart';
 import '/services/ai_client.dart';
 import '/services/adaptive_prompts.dart';
+import '/services/platform_client.dart';
 import '/student/student_profile.dart';
 
 // Document processing via the swappable AI provider (currently Kimi/Moonshot).
@@ -59,5 +60,12 @@ Future<String> processDocumentWithGpt4o({
     ]),
   );
 
+  if (!result.ok) {
+    PlatformClient.queueUsageEvent('provider_error',
+        payload: {'provider': 'gemini', 'errorType': 'document_processing_failed'});
+  } else {
+    PlatformClient.queueUsageEvent('tool_used',
+        payload: {'mode': 'learning', 'tool': mode});
+  }
   return result.ok ? result.content! : result.error!;
 }
