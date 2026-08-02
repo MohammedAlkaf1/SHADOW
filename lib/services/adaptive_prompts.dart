@@ -29,6 +29,52 @@ extension LearningActionArabic on LearningAction {
       };
 }
 
+// ── Platform integration: source the "بيانات الطالب" block from directives
+// when a real platform session is loaded, instead of the raw local enum ──
+//
+// The prompt TEXT below is unchanged (still shows Gemini all three tiers,
+// still labels which one is active via these two lines) — only the SOURCE
+// of that label swaps. The platform never sends this app the raw
+// category/supportLevel (see StudentProfile.directives docs), so these
+// labels are reverse-derived from the already-decided, opaque directive
+// values (e.g. which font size tier was chosen) rather than read from
+// `profile.supportLevel`/`profile.category` directly. Gemini seeing this
+// label is unrelated to the "student never sees their classification" rule
+// — it's an AI system-prompt detail, never surfaced in any response shown
+// to the student (see rule #2 in both prompts below).
+String _levelArabicLabel(StudentProfile profile) {
+  final directives = profile.directives;
+  if (directives == null) return profile.supportLevel.arabicLabel;
+  return switch (directives.learningMode.defaultFontSize.round()) {
+    14 => 'دعم خفيف',
+    18 => 'دعم متوسط',
+    _ => 'دعم مكثف',
+  };
+}
+
+String _categoryArabicLabel(StudentProfile profile) {
+  final layer = profile.directives?.categoryLayer;
+  if (layer == null) return profile.category.arabicLabel;
+  if (layer.reducesNotifications || layer.hidesNonEssentialVisualElements) {
+    return 'اضطرابات النمو العصبي';
+  }
+  if (layer.autoSummarizesEverywhere || layer.repeatsIdeasTwoWays) {
+    return 'صعوبات التعلم';
+  }
+  if (layer.oneStepAtATime || layer.confirmAfterEveryStep) {
+    return 'الإعاقات الإدراكية الخفيفة';
+  }
+  if (layer.simplerUiLanguage || layer.autoRephrasing) {
+    return 'اضطرابات التواصل واللغة';
+  }
+  if (layer.reassuringTone || layer.hidesFailureWording) {
+    return 'الاضطرابات السلوكية والانفعالية';
+  }
+  // No category-layer flag set at all — fall back to the enum default
+  // rather than guess.
+  return profile.category.arabicLabel;
+}
+
 /// System prompt for the visual-assistance mode (image description / text
 /// reading). Pass [StudentProfile.current] — the caller decides which
 /// profile is active, this function stays pure/testable.
@@ -36,8 +82,8 @@ String buildVisionPrompt(StudentProfile profile) => '''
 أنت "شادو"، مساعد بصري لطالب جامعي. مهمتك وصف الصورة أو قراءة النص فيها.
 
 بيانات الطالب (سرّية — لا تذكرها في ردّك):
-- التصنيف العام: ${profile.category.arabicLabel}
-- مستوى الدعم: ${profile.supportLevel.arabicLabel}
+- التصنيف العام: ${_categoryArabicLabel(profile)}
+- مستوى الدعم: ${_levelArabicLabel(profile)}
 
 اضبط أسلوبك حسب مستوى الدعم بصرامة:
 
@@ -82,8 +128,8 @@ String buildLearningPrompt(StudentProfile profile, LearningAction action) => '''
 دراسية أعطاك إياها.
 
 بيانات الطالب (سرّية — لا تذكرها في ردّك):
-- التصنيف العام: ${profile.category.arabicLabel}
-- مستوى الدعم: ${profile.supportLevel.arabicLabel}
+- التصنيف العام: ${_categoryArabicLabel(profile)}
+- مستوى الدعم: ${_levelArabicLabel(profile)}
 - الإجراء المطلوب: ${action.arabicLabel}
 
 اضبط أسلوبك حسب مستوى الدعم بصرامة:
