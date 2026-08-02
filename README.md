@@ -42,13 +42,51 @@ out of the command line and logs.
    ```json
    {
      "DEEPGRAM_API_KEY": "your_deepgram_key",
-     "OPENAI_API_KEY": "your_openai_key"
+     "OPENAI_API_KEY": "your_openai_key",
+     "PLATFORM_BASE_URL": "http://localhost:3000/api"
    }
    ```
    `env.json` is git-ignored — it is never committed. `env.example.json` (empty
    placeholders) is the committed template. Deepgram powers live captions and voice
    control; OpenAI powers vision and document simplification (leave it "" if you
    don't have one yet — those two modes just show a "key missing" message).
+   `PLATFORM_BASE_URL` points at the Shadow Platform backend (see
+   `D:\Shadow\platform`, `docs/API.md` there) — defaults to
+   `http://localhost:3000/api` for local dev if omitted.
+
+## Platform integration (login, mode gating, adaptation)
+
+This app is a client of the separate Shadow Platform backend
+(`D:\Shadow\platform`). On first launch (or after logout) the app shows a
+**login screen** (email + password against the platform's demo accounts,
+e.g. `student@demo.shadow.sa` / `Password123!` — see the platform's own
+README for the full demo credential list). After login:
+
+- The mode-selection (home) screen only shows the 4 top-level mode cards
+  (deaf/visual/learning/physical) that are enabled on the student's
+  SupportPlan on the platform — a card is hidden entirely if its
+  `DEAF_MODE`/`VISUAL_MODE`/`LEARNING_MODE`/`PHYSICAL_MODE` tool code isn't
+  in the platform's `enabledTools` response. Before login, or if nothing has
+  ever been fetched from the platform yet, every mode stays visible
+  (fail-open, matching the app's original behavior).
+- Font sizes, text styles, alert sensitivity, etc. inside each mode are
+  driven by the platform's **adaptation directives**
+  (`lib/services/adaptation_directives.dart`) instead of a locally-held
+  category/support-level — this app is never told the student's actual
+  classification, only these already-decided, opaque values. See
+  `lib/student/student_profile.dart` and the platform's `docs/API.md`.
+- Usage events (`mode_opened`, `tool_used`, `provider_error` — abstract
+  metadata only, never audio/image/PDF content or transcripts) are buffered
+  locally and sent to the platform in batches (`lib/services/platform_client.dart`),
+  either every 60 seconds or when a mode screen closes, whichever is first.
+- **Offline-first:** if the platform is unreachable, the app keeps working
+  with the last successfully-fetched profile/directives (cached via
+  `lib/services/app_prefs.dart`), and queues usage events locally until
+  connectivity returns. A dead platform connection never blocks a mode from
+  working.
+- The debug-only Developer Tools screen (`lib/pages/dev_tools`) still lets a
+  developer override category/support-level locally without a platform
+  session — useful for testing adaptation behavior without a live backend.
 
 ## Building and running on Android
 
