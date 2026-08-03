@@ -68,4 +68,37 @@ void main() {
       expect(correctTechnicalTerms(value), value);
     }
   });
+
+  // Regression coverage for a reported on-device bug: a sentence with 4
+  // terms where only "Machine Learning" was corrected (and even that not
+  // quite — the actual on-device output was the shorter "مشين لين", not any
+  // form previously in the dictionary) and Database/Artificial
+  // Intelligence/User Interface were missed entirely. Root cause: every
+  // dictionary key assumed a leading "ال" the real Deepgram output didn't
+  // always include. Fixed by trying the definite article both added and
+  // removed (see _articleVariants in technical_terms_corrector.dart).
+
+  test('reported bug: all 4 terms in one sentence are corrected, including '
+      'the shorter no-article "مشين لين" form actually seen on-device', () {
+    const before =
+        'اليوم بنشرح عن مشين لين والداتابيس وارتيفيشيال انتلجنس واليوزر انترفيس';
+    const expected =
+        'اليوم بنشرح عن Machine Learning وDatabase وArtificial Intelligence وUser Interface';
+    expect(correctTechnicalTerms(before), expected);
+  });
+
+  test('dictionary keys authored with a leading "ال" also match the same '
+      'word without it (Deepgram often omits the article on loanwords)', () {
+    expect(correctTechnicalTerms('نفتح داتابيس'), 'نفتح Database');
+    expect(correctTechnicalTerms('نفتح انترفيس'), 'نفتح Interface');
+    expect(correctTechnicalTerms('نفتح سوفتوير'), 'نفتح Software');
+  });
+
+  test('a dictionary key authored WITHOUT "ال" also matches the same word '
+      'WITH it prepended', () {
+    // 'مشين لين' is stored without an article; the toggle must also accept
+    // the article-prefixed form as an alternate spelling of the same word.
+    expect(correctTechnicalTerms('نتكلم عن الماشين لين'),
+        'نتكلم عن Machine Learning');
+  });
 }

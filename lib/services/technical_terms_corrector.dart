@@ -58,6 +58,19 @@ String _normalize(String s) => s
 /// that merely happens to start with the same letter.
 const _attachableConnectors = ['و', 'ف'];
 
+/// Deepgram doesn't consistently prefix an English loanword with the Arabic
+/// definite article "ال" — some dictionary keys were authored with it
+/// ("الداتابيس"), some real output may omit it ("داتابيس"), and vice versa.
+/// Rather than hand-duplicate every dictionary entry in both forms, try the
+/// word both with "ال" added and with it stripped, and let whichever form is
+/// actually a dictionary key win.
+List<String> _articleVariants(String word) {
+  if (word.startsWith('ال') && word.length > 3) {
+    return [word, word.substring(2)];
+  }
+  return [word, 'ال$word'];
+}
+
 /// Replaces every recognized phonetic transliteration in [text] with its
 /// correct English term. Text with no technical terms is returned unchanged
 /// (including its exact original whitespace/punctuation).
@@ -85,29 +98,33 @@ String correctTechnicalTerms(String text) {
         for (var k = 0; k < span; k++) segments[wordIndices[i + k]],
       ];
       final firstWord = _normalize(words.first);
+      final rest = words.skip(1).map(_normalize).toList();
 
-      // Try the phrase as-is, then — only on the first word — with a
-      // leading attached connector (و/ف) stripped, so "والداتابيس" still
-      // matches the "الداتابيس" key; the connector is prepended to the
-      // output with no space, matching how it was attached on input.
+      // Build every plausible form of the first word: as-is, with a leading
+      // attached connector (و/ف) stripped, and — for each of those — with
+      // the Arabic definite article "ال" both added and removed. Try them
+      // in order (most-likely-first isn't important here: these are all
+      // alternate spellings of the *same* intended word, not competing
+      // interpretations) until one forms a dictionary hit.
+      final candidates = <(String word, String prefix)>[
+        for (final form in _articleVariants(firstWord)) (form, ''),
+        for (final connector in _attachableConnectors)
+          if (firstWord.startsWith(connector) &&
+              firstWord.length > connector.length)
+            for (final form in _articleVariants(
+                firstWord.substring(connector.length)))
+              (form, connector),
+      ];
+
       String? replacement;
       String prefix = '';
-      final direct = ([firstWord, ...words.skip(1).map(_normalize)]).join(' ');
-      replacement = technicalTermsDictionary[direct];
-      if (replacement == null) {
-        for (final connector in _attachableConnectors) {
-          if (!firstWord.startsWith(connector) || firstWord.length <= connector.length) {
-            continue;
-          }
-          final stripped = firstWord.substring(connector.length);
-          final withStripped =
-              ([stripped, ...words.skip(1).map(_normalize)]).join(' ');
-          final hit = technicalTermsDictionary[withStripped];
-          if (hit != null) {
-            replacement = hit;
-            prefix = connector;
-            break;
-          }
+      for (final (word, candidatePrefix) in candidates) {
+        final phrase = ([word, ...rest]).join(' ');
+        final hit = technicalTermsDictionary[phrase];
+        if (hit != null) {
+          replacement = hit;
+          prefix = candidatePrefix;
+          break;
         }
       }
 

@@ -52,8 +52,13 @@ const Map<String, String> technicalTermsDictionary = {
   'المشين ليرنينج': 'Machine Learning',
   'المشين ليننج': 'Machine Learning',
   'الماشين ليرنينج': 'Machine Learning',
+  // Shorter form observed on-device: Deepgram dropped the "ر" of "learning"
+  // and the article entirely.
+  'مشين لين': 'Machine Learning',
+  'ماشين لين': 'Machine Learning',
   'ارتيفيشيال انتلجنس': 'Artificial Intelligence',
   'الارتفيشيال انتلجنس': 'Artificial Intelligence',
+  'ارتفيشيال انتلجنس': 'Artificial Intelligence',
   'النيورال نتورك': 'Neural Network',
   'الديب ليرنينج': 'Deep Learning',
   'الكلاود كمبيوتينج': 'Cloud Computing',
