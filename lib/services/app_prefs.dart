@@ -22,12 +22,57 @@ class AppPrefs {
   static const _kRefreshToken = 'platform_refresh_token';
   static const _kCachedProfileJson = 'platform_cached_profile_json';
   static const _kQueuedEventsJson = 'platform_queued_events_json';
+  static const _kAppLanguage = 'app_language';
 
   /// Default retention for saved transcripts (minimal by design).
   static const int defaultRetentionDays = 30;
 
+  /// Arabic-first default — matches the app's original single-language state.
+  static const String defaultAppLanguage = 'ar';
+
   static Future<SharedPreferences> get _prefs =>
       SharedPreferences.getInstance();
+
+  // ── App language ('ar' or 'en') ─────────────────────────────────────────
+  //
+  // The single source of truth for which language Deepgram/Gemini should use
+  // (lib/custom_code/actions/*, lib/services/adaptive_prompts.dart) — those
+  // call sites have no BuildContext, so they read this directly instead of
+  // easy_localization's own (context-based) `context.locale`. The settings
+  // screen keeps both in sync: it calls context.setLocale() for the UI *and*
+  // setAppLanguage() for everything else, in one place.
+  //
+  // [currentAppLanguage] is a synchronous, in-memory cache of the same
+  // value — mirrors how StudentProfileProvider/FFAppState work elsewhere in
+  // this codebase (an async-persisted value that's also readable
+  // synchronously once loaded), because Deepgram's WebSocket URI and
+  // Gemini's prompt selection are built synchronously and can't await
+  // SharedPreferences on every call. main.dart's startup call to
+  // getAppLanguage() populates the cache before anything else runs;
+  // setAppLanguage() (called from the settings screen) updates it
+  // immediately, before the write even completes.
+
+  static String _cachedAppLanguage = defaultAppLanguage;
+
+  static String get currentAppLanguage => _cachedAppLanguage;
+
+  static Future<String> getAppLanguage() async {
+    final stored =
+        (await _prefs).getString(_kAppLanguage) ?? defaultAppLanguage;
+    _cachedAppLanguage = stored;
+    return stored;
+  }
+
+  static Future<void> setAppLanguage(String languageCode) async {
+    _cachedAppLanguage = languageCode;
+    await (await _prefs).setString(_kAppLanguage, languageCode);
+  }
+
+  /// The Deepgram `language` query parameter for the active app language.
+  /// 'ar' for Arabic; 'en-US' for English (Deepgram's specific US-English
+  /// code — matches what the owner specified).
+  static String get deepgramLanguageCode =>
+      currentAppLanguage == 'en' ? 'en-US' : 'ar';
 
   // ── Transcript retention (days) ─────────────────────────────────────────
 

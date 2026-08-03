@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:web_socket_channel/io.dart';
 
+import '/services/app_prefs.dart';
 import '/services/deepgram_parser.dart';
 
 const String _apiKey = String.fromEnvironment('DEEPGRAM_API_KEY');
@@ -67,6 +68,12 @@ Future<void> _startDeepgramStream() async {
     return;
   }
 
+  // Sourced from the student's app-language choice (Settings screen) —
+  // 'ar' or 'en-US' — not hardcoded. See AppPrefs.deepgramLanguageCode.
+  final deepgramLanguage = AppPrefs.deepgramLanguageCode;
+  debugPrint('🌐 Deepgram language=$deepgramLanguage '
+      '(app language=${AppPrefs.currentAppLanguage})');
+
   final uri = Uri.parse(
     'wss://api.deepgram.com/v1/listen'
     '?encoding=linear16&sample_rate=16000&channels=1'
@@ -74,7 +81,7 @@ Future<void> _startDeepgramStream() async {
     // nova-3 is Deepgram's current multilingual model. If "ar" is still
     // rejected, the onError/onDone logs below print Deepgram's exact reason —
     // then try language=multi (also suits Arabic+English code-switching).
-    '&language=ar&model=nova-3&smart_format=true&interim_results=true',
+    '&language=$deepgramLanguage&model=nova-3&smart_format=true&interim_results=true',
   );
 
   debugPrint('🔌 WebSocket connecting to: ${uri.host}');

@@ -8,9 +8,11 @@ import 'package:flutter/material.dart';
 // DO NOT REMOVE OR MODIFY THE CODE ABOVE!
 
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:web_socket_channel/io.dart';
 
+import '/services/app_prefs.dart';
 import '/services/deepgram_parser.dart';
 import '/student/student_profile.dart';
 
@@ -33,10 +35,16 @@ Future<String> listenForVoiceCommand() async {
   final completer = Completer<String>();
   String lastResult = '';
 
+  // Sourced from the student's app-language choice (Settings screen) —
+  // 'ar' or 'en-US' — not hardcoded. See AppPrefs.deepgramLanguageCode.
+  final deepgramLanguage = AppPrefs.deepgramLanguageCode;
+  debugPrint('🌐 Deepgram (voice command) language=$deepgramLanguage '
+      '(app language=${AppPrefs.currentAppLanguage})');
+
   final uri = Uri.parse(
     'wss://api.deepgram.com/v1/listen'
     '?encoding=linear16&sample_rate=16000&channels=1'
-    '&language=ar&model=nova-3&smart_format=true&interim_results=true',
+    '&language=$deepgramLanguage&model=nova-3&smart_format=true&interim_results=true',
   );
 
   // Auth via the Authorization header (Deepgram's supported method); the
