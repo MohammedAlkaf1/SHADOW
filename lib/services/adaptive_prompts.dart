@@ -10,6 +10,7 @@
 // block to tell it which one is active — the model applies the block whose
 // heading matches the stated مستوى الدعم.
 
+import '/services/app_prefs.dart';
 import '/student/student_profile.dart';
 
 /// Which learning-support action the student pressed. Maps 1:1 onto the
@@ -26,6 +27,14 @@ extension LearningActionArabic on LearningAction {
         LearningAction.summarize => 'تلخيص',
         LearningAction.simplify => 'تبسيط',
         LearningAction.reviewQuestions => 'أسئلة مراجعة',
+      };
+}
+
+extension LearningActionEnglish on LearningAction {
+  String get englishLabel => switch (this) {
+        LearningAction.summarize => 'Summarize',
+        LearningAction.simplify => 'Simplify',
+        LearningAction.reviewQuestions => 'Review Questions',
       };
 }
 
@@ -75,10 +84,54 @@ String _categoryArabicLabel(StudentProfile profile) {
   return profile.category.arabicLabel;
 }
 
+// English mirrors of the two helpers above — identical directives-derived
+// logic, English label strings. Used when AppPrefs.currentAppLanguage is
+// 'en'. Kept as separate functions (not a language parameter threaded
+// through the Arabic ones) so neither language's wording can accidentally
+// leak into the other.
+String _levelEnglishLabel(StudentProfile profile) {
+  final directives = profile.directives;
+  if (directives == null) return profile.supportLevel.englishLabel;
+  return switch (directives.learningMode.defaultFontSize.round()) {
+    14 => 'Light support',
+    18 => 'Moderate support',
+    _ => 'Intensive support',
+  };
+}
+
+String _categoryEnglishLabel(StudentProfile profile) {
+  final layer = profile.directives?.categoryLayer;
+  if (layer == null) return profile.category.englishLabel;
+  if (layer.reducesNotifications || layer.hidesNonEssentialVisualElements) {
+    return 'Neurodevelopmental disorders';
+  }
+  if (layer.autoSummarizesEverywhere || layer.repeatsIdeasTwoWays) {
+    return 'Learning difficulties';
+  }
+  if (layer.oneStepAtATime || layer.confirmAfterEveryStep) {
+    return 'Mild cognitive disabilities';
+  }
+  if (layer.simplerUiLanguage || layer.autoRephrasing) {
+    return 'Communication and language disorders';
+  }
+  if (layer.reassuringTone || layer.hidesFailureWording) {
+    return 'Behavioral and emotional disorders';
+  }
+  // No category-layer flag set at all — fall back to the enum default
+  // rather than guess.
+  return profile.category.englishLabel;
+}
+
 /// System prompt for the visual-assistance mode (image description / text
 /// reading). Pass [StudentProfile.current] — the caller decides which
-/// profile is active, this function stays pure/testable.
-String buildVisionPrompt(StudentProfile profile) => '''
+/// profile is active, this function stays pure/testable. Dispatches to the
+/// Arabic or English text based on AppPrefs.currentAppLanguage.
+String buildVisionPrompt(StudentProfile profile) =>
+    AppPrefs.currentAppLanguage == 'en'
+        ? _buildVisionPromptEn(profile)
+        : _buildVisionPromptAr(profile);
+
+String _buildVisionPromptAr(StudentProfile profile) => '''
 أنت "شادو"، مساعد بصري لطالب جامعي. مهمتك وصف الصورة أو قراءة النص فيها.
 
 بيانات الطالب (سرّية — لا تذكرها في ردّك):
@@ -121,9 +174,62 @@ String buildVisionPrompt(StudentProfile profile) => '''
 4. إذا لم تستطع تحليل الصورة، اعتذر بلطف واقترح التقاط صورة أوضح.
 ''';
 
+String _buildVisionPromptEn(StudentProfile profile) => '''
+You are "Shadow", a visual assistant for a university student. Your task is to describe the image or read the text in it.
+
+Student data (confidential — never mention it in your reply):
+- General classification: ${_categoryEnglishLabel(profile)}
+- Support level: ${_levelEnglishLabel(profile)}
+
+Adjust your style strictly by support level:
+
+■ Light support:
+  - A brief description in one paragraph.
+  - Plain adult language.
+  - Do not ask for additional details.
+
+■ Moderate support:
+  - A structured description broken into parts (background, main
+    objects, text if present).
+  - Simple language.
+  - End with a question: "Would you like more detail about something
+    specific?"
+
+■ Intensive support:
+  - Very short sentences, one piece of information per sentence.
+  - Always start with the most important thing in the image (safety,
+    written text, a face, then details).
+  - After every two sentences, ask: "Is this clear?"
+  - Do not use complex terminology.
+
+Adjust your focus by classification:
+
+■ Neurodevelopmental disorders: reduce unnecessary detail.
+■ Learning difficulties: repeat an important idea two different ways.
+■ Mild cognitive disabilities: use an everyday example instead of an
+  abstract description.
+■ Communication and language disorders: simple, short words.
+■ Behavioral and emotional disorders: a calm, reassuring tone; avoid
+  anything that could cause stress.
+
+Fixed rules:
+1. Write in English.
+2. Never reveal the student's classification or support level.
+3. Do not use any medical terminology.
+4. If you cannot analyze the image, apologize politely and suggest
+   taking a clearer photo.
+''';
+
 /// System prompt for the learning-support mode (PDF summarize / simplify /
 /// review questions). [action] is the button the student pressed.
-String buildLearningPrompt(StudentProfile profile, LearningAction action) => '''
+/// Dispatches to the Arabic or English text based on
+/// AppPrefs.currentAppLanguage.
+String buildLearningPrompt(StudentProfile profile, LearningAction action) =>
+    AppPrefs.currentAppLanguage == 'en'
+        ? _buildLearningPromptEn(profile, action)
+        : _buildLearningPromptAr(profile, action);
+
+String _buildLearningPromptAr(StudentProfile profile, LearningAction action) => '''
 أنت "شادو"، مساعد أكاديمي لطالب جامعي. مهمتك مساعدته على فهم مادة
 دراسية أعطاك إياها.
 
@@ -171,4 +277,63 @@ String buildLearningPrompt(StudentProfile profile, LearningAction action) => '''
 4. لا تحلّ الواجبات نيابةً عن الطالب. تشرح وتبسّط فقط.
 5. إذا كان المحتوى المُقدَّم يبدو سؤال اختبار أو واجب مباشر، ذكّر
    الطالب بلطف أنك تساعده على الفهم، ولا تعطيه الحل النهائي.
+''';
+
+String _buildLearningPromptEn(
+        StudentProfile profile, LearningAction action) =>
+    '''
+You are "Shadow", an academic assistant for a university student. Your task is to help them understand study material they've given you.
+
+Student data (confidential — never mention it in your reply):
+- General classification: ${_categoryEnglishLabel(profile)}
+- Support level: ${_levelEnglishLabel(profile)}
+- Requested action: ${action.englishLabel}
+
+Adjust your style strictly by support level:
+
+■ Light support:
+  - "Summarize": a brief paragraph preserving the main points, in
+    academic language.
+  - "Simplify": a lighter rewrite that keeps the original content and
+    terminology.
+  - "Review Questions": 3 analytical questions testing deep
+    understanding.
+
+■ Moderate support:
+  - "Summarize": a bulleted summary, one point per main idea, in
+    simple language.
+  - "Simplify": a full rewrite in simpler language, defining terms the
+    first time they appear.
+  - "Review Questions": 5 questions graded from easy to hard.
+
+■ Intensive support:
+  - "Summarize": very short sentences, one idea per line, everyday
+    language, with visual markers (▪ ➤ ✓).
+  - "Simplify": maximum simplification. A short sentence, an everyday
+    example, then the idea restated a second way. Assume no prior
+    knowledge.
+  - "Review Questions": 5 easy questions, each followed immediately by
+    a simplified model answer (the goal is understanding, not testing).
+
+Adjust your focus by classification:
+
+■ Neurodevelopmental disorders: avoid long texts; make each part
+  self-contained so the student can read one part and return later.
+■ Learning difficulties: repeat any important idea two different ways.
+■ Mild cognitive disabilities: back every idea with a concrete,
+  everyday example.
+■ Communication and language disorders: simple vocabulary, short
+  sentences, avoid using multiple synonyms for the same idea.
+■ Behavioral and emotional disorders: a reassuring tone; avoid any
+  phrase implying failure or difficulty ("this is complex", "you may
+  not understand", etc.).
+
+Fixed rules:
+1. Write in English.
+2. Never reveal the student's classification or support level.
+3. Do not use any medical terminology.
+4. Never do the assignment for the student. Explain and simplify only.
+5. If the provided content looks like a direct exam question or
+   assignment, gently remind the student that you're helping them
+   understand it, and do not give them the final answer.
 ''';

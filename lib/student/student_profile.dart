@@ -93,6 +93,32 @@ extension SupportLevelArabic on SupportLevel {
       };
 }
 
+/// English counterparts of [StudentCategoryArabic]/[SupportLevelArabic] —
+/// used by the English Gemini prompts in adaptive_prompts.dart when the
+/// student's app-language setting is English. Same values, same meaning,
+/// just the language the "بيانات الطالب" / "Student data" block is written
+/// in — the confidentiality rule (never reveal this to the student) applies
+/// identically in both languages.
+extension StudentCategoryEnglish on StudentCategory {
+  String get englishLabel => switch (this) {
+        StudentCategory.neurodevelopmental => 'Neurodevelopmental disorders',
+        StudentCategory.learningDifficulties => 'Learning difficulties',
+        StudentCategory.mildCognitive => 'Mild cognitive disabilities',
+        StudentCategory.communicationLanguage =>
+          'Communication and language disorders',
+        StudentCategory.behavioralEmotional =>
+          'Behavioral and emotional disorders',
+      };
+}
+
+extension SupportLevelEnglish on SupportLevel {
+  String get englishLabel => switch (this) {
+        SupportLevel.light => 'Light support',
+        SupportLevel.moderate => 'Moderate support',
+        SupportLevel.intensive => 'Intensive support',
+      };
+}
+
 /// A student's adaptation profile: what to adapt for (category) and how
 /// strongly (support level). Immutable; use [copyWith] to change a field.
 class StudentProfile {
