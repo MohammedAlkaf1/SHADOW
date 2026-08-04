@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -53,6 +55,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   @override
   void dispose() {
     PlatformClient.flushQueuedEvents();
+    // Don't let "اقرأ لي" keep speaking in the background after leaving.
+    if (_isSpeakingResult) unawaited(actions.stopArabicSpeaking());
     _model.dispose();
     super.dispose();
   }

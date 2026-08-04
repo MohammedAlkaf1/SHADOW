@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '/a11y.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
@@ -100,6 +102,8 @@ class _DeafModeTranscriptionWidgetState
     // Flush buffered platform usage events on mode close (per the buffering
     // policy: every 60s OR on mode close, whichever first). Fire-and-forget.
     PlatformClient.flushQueuedEvents();
+    // Don't let "اقرأ لي" keep speaking in the background after leaving.
+    if (_isSpeakingTranscript) unawaited(actions.stopArabicSpeaking());
     _animController.dispose();
     _autoSummaryService.dispose();
     _model.dispose();

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
@@ -55,6 +57,8 @@ class _VisualAssistanceModeWidgetState
   @override
   void dispose() {
     PlatformClient.flushQueuedEvents();
+    // Don't let "استمع للنتيجة" keep speaking in the background after leaving.
+    if (_model.isSpeaking) unawaited(actions.stopArabicSpeaking());
     _model.dispose();
     super.dispose();
   }
