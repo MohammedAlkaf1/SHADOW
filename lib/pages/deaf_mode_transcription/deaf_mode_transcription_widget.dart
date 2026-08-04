@@ -4,7 +4,6 @@ import '/flutter_flow/flutter_flow_util.dart';
 import '/flutter_flow/flutter_flow_widgets.dart';
 import '/theme.dart';
 import 'dart:math';
-import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
 import '/services/ai_client.dart';
@@ -19,6 +18,7 @@ import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
 import 'saved_transcripts_page.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -179,22 +179,22 @@ class _DeafModeTranscriptionWidgetState
   Future<void> _saveTranscript() async {
     final text = _currentText.trim();
     if (text.isEmpty) {
-      _snack('لا يوجد نص لحفظه', essential: false);
+      _snack('deaf.noTextToSave'.tr(), essential: false);
       return;
     }
     await TranscriptStore.instance.save(text);
     _transcriptSaved = true;
-    _snack('تم حفظ النص', essential: false);
+    _snack('deaf.textSaved'.tr(), essential: false);
   }
 
   void _copyTranscript() {
     final text = _currentText.trim();
     if (text.isEmpty) {
-      _snack('لا يوجد نص لنسخه', essential: false);
+      _snack('deaf.noTextToCopy'.tr(), essential: false);
       return;
     }
     Clipboard.setData(ClipboardData(text: text));
-    _snack('تم نسخ النص', essential: false);
+    _snack('deaf.textCopied'.tr(), essential: false);
   }
 
   void _openSaved() {
@@ -218,7 +218,7 @@ class _DeafModeTranscriptionWidgetState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text,
-            textAlign: TextAlign.end, style: AppText.body(color: AppColors.onNavy)),
+            textAlign: TextAlign.start, style: AppText.body(color: AppColors.onNavy)),
         backgroundColor: AppColors.navy,
         behavior: SnackBarBehavior.floating,
       ),
@@ -233,75 +233,62 @@ class _DeafModeTranscriptionWidgetState
     if (status.isGranted) return true;
     _snack(
         status.isPermanentlyDenied
-            ? 'الميكروفون محظور. فعّله من إعدادات التطبيق للسماح بالتسجيل.'
-            : 'يرجى السماح باستخدام الميكروفون لتشغيل التسجيل.',
+            ? 'deaf.micBlocked'.tr()
+            : 'deaf.micPermissionNeeded'.tr(),
         essential: true);
     return false;
   }
 
+  // Font-size only. The old language radio here was dead (hardcoded to
+  // 'ar', onChanged did nothing) and is now redundant with the real,
+  // functional app-language choice in the global Settings screen — removed
+  // rather than translated, to avoid shipping a second, misleading language
+  // control.
   void _showSettingsDialog() {
     showDialog(
       context: context,
-      builder: (ctx) => Directionality(
-        textDirection: ui.TextDirection.rtl,
-        child: StatefulBuilder(
-          builder: (ctx, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.surface,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24.0)),
-              title: Text(
-                'الإعدادات',
-                textAlign: TextAlign.end,
-                style: AppText.title(),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text('حجم الخط', textAlign: TextAlign.end, style: AppText.body()),
-                  Slider(
-                    activeColor: AppColors.terracotta,
-                    inactiveColor: AppColors.border,
-                    value: FFAppState().readingFontSize.clamp(14.0, 32.0),
-                    min: 14.0,
-                    max: 32.0,
-                    divisions: 9,
-                    label: '${FFAppState().readingFontSize.round()}',
-                    onChanged: (val) {
-                      setDialogState(() {});
-                      FFAppState().update(() {
-                        FFAppState().readingFontSize = val;
-                      });
-                    },
-                  ),
-                  const Divider(color: AppColors.border),
-                  Text('اللغة', textAlign: TextAlign.end, style: AppText.body()),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Text('العربية', style: AppText.label(color: AppColors.onCream)),
-                      Radio<String>(
-                        activeColor: AppColors.navy,
-                        value: 'ar',
-                        groupValue: 'ar',
-                        onChanged: (_) {},
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-              actionsAlignment: MainAxisAlignment.start,
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: Text('إغلاق',
-                      style: AppText.button(color: AppColors.navy)),
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          return AlertDialog(
+            backgroundColor: AppColors.surface,
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
+            title: Text(
+              'common.fontSize'.tr(),
+              textAlign: TextAlign.start,
+              style: AppText.title(),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Slider(
+                  activeColor: AppColors.terracotta,
+                  inactiveColor: AppColors.border,
+                  value: FFAppState().readingFontSize.clamp(14.0, 32.0),
+                  min: 14.0,
+                  max: 32.0,
+                  divisions: 9,
+                  label: '${FFAppState().readingFontSize.round()}',
+                  onChanged: (val) {
+                    setDialogState(() {});
+                    FFAppState().update(() {
+                      FFAppState().readingFontSize = val;
+                    });
+                  },
                 ),
               ],
-            );
-          },
-        ),
+            ),
+            actionsAlignment: MainAxisAlignment.start,
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx),
+                child: Text('common.close'.tr(),
+                    style: AppText.button(color: AppColors.navy)),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -327,7 +314,7 @@ class _DeafModeTranscriptionWidgetState
     );
 
     if (!StudentProfile.current.isIntensive || _currentText.isEmpty) {
-      return Text(_currentText, textAlign: TextAlign.end, style: style);
+      return Text(_currentText, textAlign: TextAlign.start, style: style);
     }
 
     final matches = RegExp(r'[A-Za-z]{2,}').allMatches(_currentText);
@@ -356,7 +343,7 @@ class _DeafModeTranscriptionWidgetState
 
     return Text.rich(
       TextSpan(style: style, children: spans),
-      textAlign: TextAlign.end,
+      textAlign: TextAlign.start,
     );
   }
 
@@ -421,9 +408,7 @@ class _DeafModeTranscriptionWidgetState
     context.watch<StudentProfileProvider>();
     final recording = FFAppState().isRecording;
 
-    return Directionality(
-      textDirection: ui.TextDirection.rtl,
-      child: GestureDetector(
+    return GestureDetector(
         onTap: () {
           FocusScope.of(context).unfocus();
           FocusManager.instance.primaryFocus?.unfocus();
@@ -449,7 +434,7 @@ class _DeafModeTranscriptionWidgetState
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           a11yButton(
-                            label: 'رجوع',
+                            label: 'common.back'.tr(),
                             child: FlutterFlowIconButton(
                               borderRadius: 8.0,
                               buttonSize: 48.0,
@@ -462,15 +447,15 @@ class _DeafModeTranscriptionWidgetState
                           ),
                           Expanded(
                             child: Text(
-                              'تحويل الكلام إلى نص',
-                              textAlign: TextAlign.end,
+                              'deaf.title'.tr(),
+                              textAlign: TextAlign.start,
                               style: AppText.title(),
                             ),
                           ),
                           // Communication/language support only.
                           if (StudentProfile.current.showsMessageAssistant)
                             a11yButton(
-                              label: 'صياغة رسالة للأستاذ',
+                              label: 'deaf.messageAssistant'.tr(),
                               child: FlutterFlowIconButton(
                                 borderRadius: 8.0,
                                 buttonSize: 48.0,
@@ -481,7 +466,7 @@ class _DeafModeTranscriptionWidgetState
                               ),
                             ),
                           a11yButton(
-                            label: 'النصوص المحفوظة',
+                            label: 'deaf.savedTranscripts'.tr(),
                             child: FlutterFlowIconButton(
                               borderRadius: 8.0,
                               buttonSize: 48.0,
@@ -492,7 +477,7 @@ class _DeafModeTranscriptionWidgetState
                             ),
                           ),
                           a11yButton(
-                            label: 'الإعدادات',
+                            label: 'common.settings'.tr(),
                             child: FlutterFlowIconButton(
                               borderRadius: 8.0,
                               buttonSize: 48.0,
@@ -518,7 +503,7 @@ class _DeafModeTranscriptionWidgetState
                     children: [
                       // Status chip
                       Align(
-                        alignment: AlignmentDirectional.centerEnd,
+                        alignment: AlignmentDirectional.centerStart,
                         child: _statusChip(recording),
                       ),
                       const SizedBox(height: AppSpacing.md),
@@ -542,10 +527,10 @@ class _DeafModeTranscriptionWidgetState
                               primary: false,
                               child: Column(
                                 mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Text(
-                                    _model.sessionTitle!,
+                                    'deaf.sessionTitle'.tr(),
                                     style:
                                         AppText.label(color: AppColors.mutedOnCream),
                                   ),
@@ -561,11 +546,11 @@ class _DeafModeTranscriptionWidgetState
                       if (StudentProfile.current.showsReadAloudButton) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Align(
-                          alignment: AlignmentDirectional.centerEnd,
+                          alignment: AlignmentDirectional.centerStart,
                           child: a11yButton(
                             label: _isSpeakingTranscript
-                                ? 'إيقاف القراءة'
-                                : 'اقرأ لي النص',
+                                ? 'deaf.stopReading'.tr()
+                                : 'deaf.readAloudFull'.tr(),
                             child: TextButton.icon(
                               onPressed: _currentText.trim().isEmpty
                                   ? null
@@ -579,8 +564,8 @@ class _DeafModeTranscriptionWidgetState
                               ),
                               label: Text(
                                 _isSpeakingTranscript
-                                    ? 'إيقاف القراءة'
-                                    : 'اقرأ لي',
+                                    ? 'deaf.stopReading'.tr()
+                                    : 'deaf.readAloud'.tr(),
                                 style:
                                     AppText.label(color: AppColors.terracotta),
                               ),
@@ -594,11 +579,11 @@ class _DeafModeTranscriptionWidgetState
                           .isAtLeast(SupportLevel.moderate)) ...[
                         const SizedBox(height: AppSpacing.sm),
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
                             if (StudentProfile.current.isIntensive) ...[
                               a11yButton(
-                                label: 'لخّص لي الآن',
+                                label: 'deaf.summarizeNow'.tr(),
                                 enabled: !_summarizingNow,
                                 child: TextButton.icon(
                                   onPressed:
@@ -614,7 +599,7 @@ class _DeafModeTranscriptionWidgetState
                                       : const Icon(Icons.bolt_rounded,
                                           size: 16,
                                           color: AppColors.terracotta),
-                                  label: Text('لخّص لي الآن',
+                                  label: Text('deaf.summarizeNow'.tr(),
                                       style: AppText.label(
                                           color: AppColors.terracotta)),
                                 ),
@@ -623,10 +608,10 @@ class _DeafModeTranscriptionWidgetState
                             ],
                             a11yButton(
                               label: _autoSummary == null
-                                  ? 'لا يوجد ملخص بعد'
+                                  ? 'deaf.noSummaryYet'.tr()
                                   : (_summaryPanelExpanded
-                                      ? 'إخفاء الملخص'
-                                      : 'عرض آخر ملخص'),
+                                      ? 'deaf.hideSummary'.tr()
+                                      : 'deaf.showSummary'.tr()),
                               enabled: _autoSummary != null,
                               child: TextButton.icon(
                                 onPressed: _autoSummary == null
@@ -643,10 +628,10 @@ class _DeafModeTranscriptionWidgetState
                                 ),
                                 label: Text(
                                   _autoSummary == null
-                                      ? 'لا يوجد ملخص بعد'
+                                      ? 'deaf.noSummaryYet'.tr()
                                       : (_summaryPanelExpanded
-                                          ? 'إخفاء الملخص'
-                                          : 'عرض آخر ملخص'),
+                                          ? 'deaf.hideSummary'.tr()
+                                          : 'deaf.showSummary'.tr()),
                                   style: AppText.label(),
                                 ),
                               ),
@@ -660,7 +645,7 @@ class _DeafModeTranscriptionWidgetState
                             padding: const EdgeInsets.all(AppSpacing.md),
                             decoration: AppDecor.creamCard(),
                             child: a11yLive(Text(_autoSummary!,
-                                textAlign: TextAlign.end,
+                                textAlign: TextAlign.start,
                                 style: AppText.body())),
                           ),
                       ],
@@ -707,7 +692,9 @@ class _DeafModeTranscriptionWidgetState
                           return Opacity(opacity: opacity, child: child);
                         },
                         child: a11yButton(
-                          label: recording ? 'إيقاف التسجيل' : 'بدء التسجيل',
+                          label: recording
+                              ? 'deaf.stopRecording'.tr()
+                              : 'deaf.startRecording'.tr(),
                           child: InkWell(
                             splashColor: Colors.transparent,
                             focusColor: Colors.transparent,
@@ -791,7 +778,9 @@ class _DeafModeTranscriptionWidgetState
                       ),
                       const SizedBox(height: AppSpacing.md),
                       Text(
-                        recording ? 'جاري التسجيل...' : 'اضغط للتسجيل',
+                        recording
+                            ? 'deaf.recordingInProgress'.tr()
+                            : 'deaf.pressToRecord'.tr(),
                         style: AppText.title(
                             color: recording
                                 ? AppColors.terracotta
@@ -800,7 +789,7 @@ class _DeafModeTranscriptionWidgetState
                       // Mild-cognitive support: permanent caption under the
                       // primary action.
                       if (StudentProfile.current.showsPermanentTooltips)
-                        permanentCaption('يسجل صوت المحاضرة ويحوّله إلى نص'),
+                        permanentCaption('deaf.recordCaption'.tr()),
                       const SizedBox(height: AppSpacing.lg),
                       // Secondary actions — hidden behind "خيارات" for
                       // neurodevelopmental / mild-cognitive support.
@@ -811,12 +800,12 @@ class _DeafModeTranscriptionWidgetState
                           children: [
                             _BottomButton(
                               icon: Icons.save_alt_rounded,
-                              label: 'حفظ',
+                              label: 'common.save'.tr(),
                               onPressed: _saveTranscript,
                             ),
                             _BottomButton(
                               icon: Icons.delete_outline_rounded,
-                              label: 'مسح',
+                              label: 'common.clear'.tr(),
                               iconColor: AppColors.error,
                               onPressed: () {
                                 _model.liveText = '';
@@ -828,7 +817,7 @@ class _DeafModeTranscriptionWidgetState
                             ),
                             _BottomButton(
                               icon: Icons.content_copy_rounded,
-                              label: 'نسخ',
+                              label: 'common.copy'.tr(),
                               onPressed: _copyTranscript,
                             ),
                           ],
@@ -841,8 +830,7 @@ class _DeafModeTranscriptionWidgetState
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   Widget _statusChip(bool recording) {
@@ -867,7 +855,7 @@ class _DeafModeTranscriptionWidgetState
           ),
           const SizedBox(width: AppSpacing.sm),
           Text(
-            recording ? 'جارٍ التسجيل' : 'متصل',
+            recording ? 'deaf.recording'.tr() : 'common.connected'.tr(),
             style: AppText.label(color: AppColors.mutedOnCream),
           ),
         ],
@@ -905,8 +893,11 @@ class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
       messages: [
         {
           'role': 'user',
-          'content':
-              'اشرح معنى المصطلح "${widget.term}" بجملة واحدة قصيرة جداً وبسيطة جداً بالعربية، مناسبة لطالب يحتاج دعماً مكثفاً.',
+          'content': AppPrefs.currentAppLanguage == 'en'
+              ? 'Explain the meaning of the term "${widget.term}" in one '
+                  'very short, very simple English sentence, suitable for '
+                  'a student who needs intensive support.'
+              : 'اشرح معنى المصطلح "${widget.term}" بجملة واحدة قصيرة جداً وبسيطة جداً بالعربية، مناسبة لطالب يحتاج دعماً مكثفاً.',
         },
       ],
     );
@@ -927,7 +918,7 @@ class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 40,
@@ -940,7 +931,7 @@ class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
               ),
             ),
             Text(widget.term,
-                textAlign: TextAlign.end,
+                textAlign: TextAlign.start,
                 style: AppText.title(color: AppColors.terracotta)),
             const SizedBox(height: AppSpacing.md),
             if (_definition == null && _error == null)
@@ -953,7 +944,7 @@ class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
               )
             else
               a11yLive(Text(_definition ?? _error!,
-                  textAlign: TextAlign.end, style: AppText.body())),
+                  textAlign: TextAlign.start, style: AppText.body())),
           ],
         ),
       ),
@@ -1000,8 +991,11 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
       messages: [
         {
           'role': 'user',
-          'content':
-              'اكتب رسالة قصيرة ومهذبة بصيغة رسمية باللغة العربية، موجّهة من طالب جامعي لأستاذه، بخصوص: $topic. اجعلها مختصرة ومباشرة، بلا مقدمات طويلة.',
+          'content': AppPrefs.currentAppLanguage == 'en'
+              ? 'Write a short, polite, formal English message from a '
+                  'university student to their instructor, about: $topic. '
+                  'Keep it brief and direct, no long preamble.'
+              : 'اكتب رسالة قصيرة ومهذبة بصيغة رسمية باللغة العربية، موجّهة من طالب جامعي لأستاذه، بخصوص: $topic. اجعلها مختصرة ومباشرة، بلا مقدمات طويلة.',
         },
       ],
     );
@@ -1028,7 +1022,7 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
       child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
               width: 40,
@@ -1040,21 +1034,21 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                 borderRadius: BorderRadius.circular(AppSpacing.pill),
               ),
             ),
-            Text('صياغة رسالة للأستاذ',
-                textAlign: TextAlign.end, style: AppText.title()),
+            Text('deaf.messageAssistantTitle'.tr(),
+                textAlign: TextAlign.start, style: AppText.title()),
             const SizedBox(height: AppSpacing.sm),
-            Text('اكتب موضوع الرسالة، وسنقترح لك صياغة مهذبة قصيرة.',
-                textAlign: TextAlign.end,
+            Text('deaf.messageAssistantSubtitle'.tr(),
+                textAlign: TextAlign.start,
                 style: AppText.label(color: AppColors.mutedOnCream)),
             const SizedBox(height: AppSpacing.md),
             TextField(
               controller: _topicController,
-              textAlign: TextAlign.end,
+              textAlign: TextAlign.start,
               maxLines: 3,
               style: AppText.body(color: AppColors.onCream),
               cursorColor: AppColors.terracotta,
               decoration: InputDecoration(
-                hintText: 'مثال: طلب تأجيل تسليم الواجب بسبب ظرف صحي',
+                hintText: 'deaf.messageAssistantHint'.tr(),
                 hintStyle: AppText.body(color: AppColors.mutedOnCream),
                 enabledBorder: const OutlineInputBorder(
                     borderSide: BorderSide(color: AppColors.border)),
@@ -1064,7 +1058,7 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
             ),
             const SizedBox(height: AppSpacing.md),
             a11yButton(
-              label: 'توليد الصياغة',
+              label: 'deaf.generateMessage'.tr(),
               enabled: !_loading,
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
@@ -1082,7 +1076,7 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                         child: CircularProgressIndicator(
                             strokeWidth: 2, color: AppColors.onNavy),
                       )
-                    : Text('توليد الصياغة',
+                    : Text('deaf.generateMessage'.tr(),
                         style: AppText.button(color: AppColors.onNavy)),
               ),
             ),
@@ -1093,21 +1087,21 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                 padding: const EdgeInsets.all(AppSpacing.md),
                 decoration: AppDecor.creamCard(),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     a11yLive(Text(_draft ?? _error!,
-                        textAlign: TextAlign.end, style: AppText.body())),
+                        textAlign: TextAlign.start, style: AppText.body())),
                     if (_draft != null) ...[
                       const SizedBox(height: AppSpacing.sm),
                       a11yButton(
-                        label: 'نسخ الرسالة',
+                        label: 'deaf.copyMessage'.tr(),
                         child: TextButton.icon(
                           onPressed: () {
                             Clipboard.setData(ClipboardData(text: _draft!));
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('تم نسخ الرسالة',
-                                    textAlign: TextAlign.end,
+                                content: Text('deaf.messageCopied'.tr(),
+                                    textAlign: TextAlign.start,
                                     style:
                                         AppText.body(color: AppColors.onNavy)),
                                 backgroundColor: AppColors.navy,
@@ -1117,7 +1111,7 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                           },
                           icon: const Icon(Icons.content_copy_rounded,
                               size: 16, color: AppColors.terracotta),
-                          label: Text('نسخ الرسالة',
+                          label: Text('deaf.copyMessage'.tr(),
                               style: AppText.label(color: AppColors.terracotta)),
                         ),
                       ),

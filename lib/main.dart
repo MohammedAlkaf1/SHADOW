@@ -1,20 +1,24 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'backend/firebase/firebase_config.dart';
 import '/flutter_flow/flutter_flow_theme.dart';
 import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/nav/nav.dart';
 import 'index.dart';
+import 'services/app_prefs.dart';
 import 'student/student_profile_provider.dart';
+
+const List<Locale> kSupportedLocales = [Locale('ar'), Locale('en')];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
+  await EasyLocalization.ensureInitialized();
 
   await initFirebase();
 
@@ -23,13 +27,26 @@ void main() async {
   final appState = FFAppState(); // Initialize FFAppState
   await appState.initializePersistedState();
 
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (context) => appState),
-      ChangeNotifierProvider(create: (context) => StudentProfileProvider()),
-    ],
-    child: MyApp(),
-  ));
+  // Boot directly in the student's saved language (AppPrefs is the single
+  // source of truth — see its "App language" section) so there's no flash of
+  // the wrong locale before easy_localization's own persisted value loads.
+  final savedLanguage = await AppPrefs.getAppLanguage();
+
+  runApp(
+    EasyLocalization(
+      supportedLocales: kSupportedLocales,
+      path: 'assets/translations',
+      fallbackLocale: const Locale('ar'),
+      startLocale: Locale(savedLanguage),
+      child: MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (context) => appState),
+          ChangeNotifierProvider(create: (context) => StudentProfileProvider()),
+        ],
+        child: MyApp(),
+      ),
+    ),
+  );
 }
 
 class MyApp extends StatefulWidget {
@@ -77,16 +94,16 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: 'شادو',
-      localizationsDelegates: [
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
-      // Arabic-first: forcing the app locale to 'ar' makes the ambient
-      // Directionality RTL for the entire widget tree (via WidgetsApp →
-      // Localizations), so every screen mirrors without per-widget wrappers.
-      locale: const Locale('ar'),
-      supportedLocales: const [Locale('ar'), Locale('en', '')],
+      // From easy_localization: the Global*Localizations delegates plus its
+      // own delegate that loads assets/translations/*.json for .tr().
+      localizationsDelegates: context.localizationDelegates,
+      // context.locale follows whatever the student picked in Settings
+      // (persisted by easy_localization itself); MaterialApp/WidgetsApp then
+      // derive the ambient Directionality from it automatically — RTL for
+      // 'ar', LTR for 'en' — so screens no longer need a hardcoded
+      // Directionality wrapper for this to work.
+      locale: context.locale,
+      supportedLocales: context.supportedLocales,
       theme: ThemeData(
         brightness: Brightness.light,
         useMaterial3: false,

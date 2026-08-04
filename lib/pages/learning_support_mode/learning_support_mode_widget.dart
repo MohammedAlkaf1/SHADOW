@@ -9,8 +9,8 @@ import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
 import '/theme.dart';
-import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -70,7 +70,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text,
-            textAlign: TextAlign.end, style: AppText.body(color: AppColors.onNavy)),
+            textAlign: TextAlign.start, style: AppText.body(color: AppColors.onNavy)),
         backgroundColor: AppColors.navy,
         behavior: SnackBarBehavior.floating,
       ),
@@ -88,18 +88,14 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     } catch (e) {
       // Cloud-backed files (e.g. OneDrive) can throw PlatformException.
       debugPrint('file_picker failed: $e');
-      _snack(
-          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).',
-          essential: true);
+      _snack('learning.filePickFailed'.tr(), essential: true);
       return;
     }
     if (result == null) return; // user cancelled
 
     final file = result.files.single;
     if (file.bytes == null) {
-      _snack(
-          'تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).',
-          essential: true);
+      _snack('learning.filePickFailed'.tr(), essential: true);
       return;
     }
     safeSetState(() {
@@ -121,7 +117,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     if (!await ensureAiConsent(context)) return;
     if (!mounted) return;
     if (_model.pdfFileBytes == null) {
-      _snack('يرجى اختيار ملف PDF أولاً', essential: true);
+      _snack('learning.chooseFileFirst'.tr(), essential: true);
       return;
     }
 
@@ -180,20 +176,18 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
     context.watch<StudentProfileProvider>();
     final hasDoc = (_model.pdfFileBytes != null);
 
-    return Directionality(
-      textDirection: ui.TextDirection.rtl,
-      child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        child: Scaffold(
-          key: scaffoldKey,
-          backgroundColor: AppColors.cream,
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _header('دعم التعلم', Icons.psychology_rounded),
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: AppColors.cream,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _header('learning.title'.tr(), Icons.psychology_rounded),
               Expanded(
                 child: SingleChildScrollView(
                   primary: false,
@@ -212,12 +206,12 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                 const Icon(Icons.cloud_upload_rounded,
                                     color: AppColors.onNavy, size: 48.0),
                                 const SizedBox(height: AppSpacing.md),
-                                Text('رفع ملف PDF للمحاضرة',
+                                Text('learning.uploadTitle'.tr(),
                                     textAlign: TextAlign.center,
                                     style: AppText.cardTitle()),
                                 const SizedBox(height: AppSpacing.lg),
                                 a11yButton(
-                                  label: 'اختر ملفاً',
+                                  label: 'learning.chooseFile'.tr(),
                                   child: Material(
                                     color: AppColors.terracotta,
                                     borderRadius: BorderRadius.circular(
@@ -229,7 +223,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                         padding: const EdgeInsets.symmetric(
                                             horizontal: AppSpacing.xl,
                                             vertical: 12.0),
-                                        child: Text('اختر ملفاً',
+                                        child: Text('learning.chooseFile'.tr(),
                                             style: AppText.button(
                                                 color: AppColors.onNavy)),
                                       ),
@@ -251,7 +245,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                               Expanded(
                                 child: Text(
                                   _model.currentDocName ?? '',
-                                  textAlign: TextAlign.end,
+                                  textAlign: TextAlign.start,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                   style: AppText.label(color: AppColors.onCream),
@@ -263,9 +257,9 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                         const SizedBox(height: AppSpacing.lg),
                         // Assistant section title
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
+                          mainAxisAlignment: MainAxisAlignment.start,
                           children: [
-                            Text('المساعد الذكي',
+                            Text('learning.assistant'.tr(),
                                 style: AppText.body(color: AppColors.onCream)),
                             const SizedBox(width: AppSpacing.sm),
                             const Icon(Icons.auto_awesome_rounded,
@@ -292,7 +286,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                         color: AppColors.terracotta),
                                   ),
                                   const SizedBox(width: AppSpacing.md),
-                                  Text('جارٍ المعالجة...',
+                                  Text('learning.processing'.tr(),
                                       style: AppText.body()),
                                 ],
                               ),
@@ -306,12 +300,12 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                             child: Padding(
                               padding: const EdgeInsets.all(AppSpacing.lg),
                               child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
                                   Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    mainAxisAlignment: MainAxisAlignment.start,
                                     children: [
-                                      Text('النتيجة',
+                                      Text('learning.result'.tr(),
                                           style: AppText.body(
                                               color: AppColors.onCream)),
                                       const SizedBox(width: AppSpacing.sm),
@@ -323,7 +317,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                   const SizedBox(height: AppSpacing.sm),
                                   a11yLive(Text(
                                     _model.aiResult!,
-                                    textAlign: TextAlign.end,
+                                    textAlign: TextAlign.start,
                                     style: GoogleFonts.tajawal(
                                       color: AppColors.onCream,
                                       fontSize:
@@ -339,8 +333,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                     const SizedBox(height: AppSpacing.sm),
                                     a11yButton(
                                       label: _isSpeakingResult
-                                          ? 'إيقاف القراءة'
-                                          : 'اقرأ لي النتيجة',
+                                          ? 'learning.stopReading'.tr()
+                                          : 'learning.readResultAloud'.tr(),
                                       child: TextButton.icon(
                                         onPressed: _toggleReadAloud,
                                         icon: Icon(
@@ -352,8 +346,8 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                         ),
                                         label: Text(
                                           _isSpeakingResult
-                                              ? 'إيقاف القراءة'
-                                              : 'اقرأ لي',
+                                              ? 'learning.stopReading'.tr()
+                                              : 'learning.readAloud'.tr(),
                                           style: AppText.label(
                                               color: AppColors.terracotta),
                                         ),
@@ -370,10 +364,9 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                   ),
                 ),
               ),
-              // Font-size slider panel (single label — no duplicate)
-              _sliderPanel(),
-            ],
-          ),
+            // Font-size slider panel (single label — no duplicate)
+            _sliderPanel(),
+          ],
         ),
       ),
     );
@@ -386,25 +379,25 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   Widget _assistantButtons() {
     final tooltips = StudentProfile.current.showsPermanentTooltips;
     final summarize = _AiActionButton(
-      label: 'تلخيص',
+      label: 'learning.summarize'.tr(),
       icon: Icons.summarize_rounded,
       isLoading: _model.isProcessing,
       onTap: () => _processDocument('summarize'),
-      caption: tooltips ? 'يعطيك أهم النقاط' : null,
+      caption: tooltips ? 'learning.summarizeCaption'.tr() : null,
     );
     final simplify = _AiActionButton(
-      label: 'تبسيط',
+      label: 'learning.simplify'.tr(),
       icon: Icons.lightbulb_outline_rounded,
       isLoading: _model.isProcessing,
       onTap: () => _processDocument('simplify'),
-      caption: tooltips ? 'يشرح المحتوى بأسلوب أسهل' : null,
+      caption: tooltips ? 'learning.simplifyCaption'.tr() : null,
     );
     final quiz = _AiActionButton(
-      label: 'أسئلة مراجعة',
+      label: 'learning.quiz'.tr(),
       icon: Icons.quiz_rounded,
       isLoading: _model.isProcessing,
       onTap: () => _processDocument('quiz'),
-      caption: tooltips ? 'يعطيك أسئلة للتدرّب' : null,
+      caption: tooltips ? 'learning.quizCaption'.tr() : null,
     );
 
     if (StudentProfile.current.hidesSecondaryActions) {
@@ -456,7 +449,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
             child: Row(
               children: [
                 a11yButton(
-                  label: 'رجوع',
+                  label: 'common.back'.tr(),
                   child: SizedBox(
                     width: 48.0,
                     height: 48.0,
@@ -471,7 +464,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(title,
-                      textAlign: TextAlign.end, style: AppText.title()),
+                      textAlign: TextAlign.start, style: AppText.title()),
                 ),
               ],
             ),
@@ -503,7 +496,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text('حجم الخط', style: AppText.body(color: AppColors.onCream)),
+                Text('common.fontSize'.tr(), style: AppText.body(color: AppColors.onCream)),
                 Text('${size.round()}',
                     style: AppText.body(color: AppColors.terracotta)),
               ],

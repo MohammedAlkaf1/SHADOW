@@ -4,7 +4,6 @@ import '/a11y.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/theme.dart';
-import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
 import '/services/app_prefs.dart';
@@ -13,6 +12,7 @@ import '/services/platform_client.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -70,7 +70,7 @@ class _PhysicalAssistanceModeWidgetState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text,
-            textAlign: TextAlign.end,
+            textAlign: TextAlign.start,
             style: AppText.body(color: AppColors.onNavy)),
         backgroundColor: AppColors.navy,
         behavior: SnackBarBehavior.floating,
@@ -105,17 +105,32 @@ class _PhysicalAssistanceModeWidgetState
   }
 
   void _dispatchVoiceCommand(String command) {
-    if (command.contains('الصمم') || command.contains('صمم')) {
+    final lower = command.toLowerCase();
+    if (command.contains('الصمم') ||
+        command.contains('صمم') ||
+        lower.contains('deaf') ||
+        lower.contains('hearing')) {
       context.pushNamed('DeafModeTranscription');
-    } else if (command.contains('البصري') || command.contains('بصري')) {
+    } else if (command.contains('البصري') ||
+        command.contains('بصري') ||
+        lower.contains('visual') ||
+        lower.contains('vision')) {
       context.pushNamed('VisualAssistanceMode');
-    } else if (command.contains('التعلم') || command.contains('تعلم')) {
+    } else if (command.contains('التعلم') ||
+        command.contains('تعلم') ||
+        lower.contains('learning') ||
+        lower.contains('study')) {
       context.pushNamed('LearningSupportMode');
     } else if (command.contains('ارجع') ||
         command.contains('رجع') ||
-        command.contains('رئيسي')) {
+        command.contains('رئيسي') ||
+        lower.contains('back') ||
+        lower.contains('home')) {
       context.pop();
-    } else if (command.contains('اتصل') || command.contains('مساعد')) {
+    } else if (command.contains('اتصل') ||
+        command.contains('مساعد') ||
+        lower.contains('call') ||
+        lower.contains('contact')) {
       _quickContact();
     }
   }
@@ -124,37 +139,35 @@ class _PhysicalAssistanceModeWidgetState
   Future<bool> _confirmVoiceCommand(String command) async {
     final result = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => Directionality(
-        textDirection: ui.TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(AppSpacing.cardRadius)),
-          title: Text('تأكيد الأمر',
-              textAlign: TextAlign.end, style: AppText.title()),
-          content: Text('سمعتك تقول: "$command". تنفيذ؟',
-              textAlign: TextAlign.end, style: AppText.body()),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext, false),
-              child: Text('إلغاء',
-                  style: AppText.button(color: AppColors.navy)),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius)),
+        title: Text('physical.confirmCommandTitle'.tr(),
+            textAlign: TextAlign.start, style: AppText.title()),
+        content: Text(
+            'physical.confirmCommandBody'.tr(args: [command]),
+            textAlign: TextAlign.start, style: AppText.body()),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('common.cancel'.tr(),
+                style: AppText.button(color: AppColors.navy)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.terracotta,
+              foregroundColor: AppColors.onNavy,
+              minimumSize: const Size(140.0, AppSpacing.minTap + 8.0),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0)),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.terracotta,
-                foregroundColor: AppColors.onNavy,
-                minimumSize: const Size(140.0, AppSpacing.minTap + 8.0),
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0)),
-              ),
-              onPressed: () => Navigator.pop(dialogContext, true),
-              child:
-                  Text('تنفيذ', style: AppText.button(color: AppColors.onNavy)),
-            ),
-          ],
-        ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('physical.execute'.tr(),
+                style: AppText.button(color: AppColors.onNavy)),
+          ),
+        ],
       ),
     );
     return result ?? false;
@@ -179,7 +192,7 @@ class _PhysicalAssistanceModeWidgetState
     final uri = Uri(scheme: 'tel', path: number);
     final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
     if (!ok && mounted) {
-      _snack('تعذّر بدء الاتصال بالرقم $number', essential: true);
+      _snack('physical.callFailed'.tr(args: [number]), essential: true);
       return;
     }
     // rapidQuickContact (intensive only) — only counts dials that actually
@@ -192,65 +205,63 @@ class _PhysicalAssistanceModeWidgetState
     final controller = TextEditingController(text: _quickContactNumber ?? '');
     final saved = await showDialog<String>(
       context: context,
-      builder: (dialogContext) => Directionality(
-        textDirection: ui.TextDirection.rtl,
-        child: AlertDialog(
-          backgroundColor: AppColors.surface,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-          title: Text('رقم الاتصال السريع',
-              textAlign: TextAlign.end, style: AppText.title()),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                'أدخل رقم الشخص الذي تريد الاتصال به بسرعة (مثل مرافق أو أحد أفراد العائلة). يُحفظ على جهازك فقط.',
-                textAlign: TextAlign.end,
-                style: AppText.label(color: AppColors.onCream),
-              ),
-              const SizedBox(height: AppSpacing.md),
-              TextField(
-                controller: controller,
-                keyboardType: TextInputType.phone,
-                textAlign: TextAlign.end,
-                autofocus: true,
-                style: AppText.body(color: AppColors.onCream),
-                cursorColor: AppColors.terracotta,
-                decoration: InputDecoration(
-                  hintText: '05xxxxxxxx',
-                  hintStyle: AppText.body(color: AppColors.mutedOnCream),
-                  enabledBorder: const OutlineInputBorder(
-                      borderSide: BorderSide(color: AppColors.border)),
-                  focusedBorder: const OutlineInputBorder(
-                      borderSide:
-                          BorderSide(color: AppColors.navy, width: 2.0)),
-                ),
-              ),
-            ],
-          ),
-          actionsAlignment: MainAxisAlignment.spaceBetween,
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child:
-                  Text('إلغاء', style: AppText.button(color: AppColors.navy)),
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
+        title: Text('physical.quickContactDialogTitle'.tr(),
+            textAlign: TextAlign.start, style: AppText.title()),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'physical.quickContactDialogBody'.tr(),
+              textAlign: TextAlign.start,
+              style: AppText.label(color: AppColors.onCream),
             ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.navy,
-                foregroundColor: AppColors.onNavy,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0)),
+            const SizedBox(height: AppSpacing.md),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.phone,
+              textAlign: TextAlign.start,
+              autofocus: true,
+              style: AppText.body(color: AppColors.onCream),
+              cursorColor: AppColors.terracotta,
+              decoration: InputDecoration(
+                hintText: '05xxxxxxxx',
+                hintStyle: AppText.body(color: AppColors.mutedOnCream),
+                enabledBorder: const OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: const OutlineInputBorder(
+                    borderSide:
+                        BorderSide(color: AppColors.navy, width: 2.0)),
               ),
-              onPressed: () {
-                final value = controller.text.trim();
-                Navigator.pop(dialogContext, value.isEmpty ? null : value);
-              },
-              child: Text('حفظ', style: AppText.button(color: AppColors.onNavy)),
             ),
           ],
         ),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: Text('common.cancel'.tr(),
+                style: AppText.button(color: AppColors.navy)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.navy,
+              foregroundColor: AppColors.onNavy,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0)),
+            ),
+            onPressed: () {
+              final value = controller.text.trim();
+              Navigator.pop(dialogContext, value.isEmpty ? null : value);
+            },
+            child: Text('common.save'.tr(),
+                style: AppText.button(color: AppColors.onNavy)),
+          ),
+        ],
       ),
     );
 
@@ -269,84 +280,82 @@ class _PhysicalAssistanceModeWidgetState
     context.watch<StudentProfileProvider>();
     final listening = _model.isListeningForCommand;
     final commands = <({String label, IconData icon})>[
-      (label: 'افتح وضع الصمم', icon: Icons.hearing_rounded),
-      (label: 'افتح وضع البصرية', icon: Icons.visibility_rounded),
-      (label: 'افتح وضع التعلم', icon: Icons.psychology_rounded),
-      (label: 'ارجع للرئيسية', icon: Icons.home_rounded),
-      (label: 'اتصل بجهة الاتصال السريع', icon: Icons.phone_rounded),
+      (label: 'physical.openDeafMode'.tr(), icon: Icons.hearing_rounded),
+      (label: 'physical.openVisualMode'.tr(), icon: Icons.visibility_rounded),
+      (label: 'physical.openLearningMode'.tr(), icon: Icons.psychology_rounded),
+      (label: 'physical.goHome'.tr(), icon: Icons.home_rounded),
+      (label: 'physical.callQuickContact'.tr(), icon: Icons.phone_rounded),
     ];
 
-    return Directionality(
-      textDirection: ui.TextDirection.rtl,
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: AppColors.cream,
-        floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
-        // Quick-contact size grows with support level: normal / +30% / +60%
-        // — a bigger, easier-to-hit target for students who need it most.
-        floatingActionButton: a11yButton(
-          label: 'اتصال سريع',
-          hint: _quickContactNumber == null
-              ? 'لم يتم تعيين رقم بعد، اضغط للإضافة'
-              : 'اتصال بالرقم المحفوظ',
-          child: Transform.scale(
-            scale: StudentProfile.current.physicalModeQuickContactScale,
-            child: FloatingActionButton.extended(
-              onPressed: _quickContact,
-              backgroundColor: AppColors.navy,
-              foregroundColor: AppColors.onNavy,
-              icon: const Icon(Icons.phone_rounded, color: AppColors.onNavy),
-              label: Text('اتصال سريع',
-                  style: AppText.button(color: AppColors.onNavy)),
-            ),
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: AppColors.cream,
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      // Quick-contact size grows with support level: normal / +30% / +60%
+      // — a bigger, easier-to-hit target for students who need it most.
+      floatingActionButton: a11yButton(
+        label: 'physical.quickContact'.tr(),
+        hint: _quickContactNumber == null
+            ? 'physical.quickContactHintUnset'.tr()
+            : 'physical.quickContactHintSet'.tr(),
+        child: Transform.scale(
+          scale: StudentProfile.current.physicalModeQuickContactScale,
+          child: FloatingActionButton.extended(
+            onPressed: _quickContact,
+            backgroundColor: AppColors.navy,
+            foregroundColor: AppColors.onNavy,
+            icon: const Icon(Icons.phone_rounded, color: AppColors.onNavy),
+            label: Text('physical.quickContact'.tr(),
+                style: AppText.button(color: AppColors.onNavy)),
           ),
         ),
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
-            Container(
-              color: AppColors.cream,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Padding(
-                    padding: const EdgeInsetsDirectional.fromSTEB(
-                        AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
-                    child: Row(
-                      children: [
-                        a11yButton(
-                          label: 'رجوع',
-                          child: FlutterFlowIconButton(
-                            borderRadius: 8.0,
-                            buttonSize: 48.0,
-                            fillColor: Colors.transparent,
-                            icon: appBackIcon(context),
-                            onPressed: () => context.pop(),
-                          ),
+      ),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          // Header
+          Container(
+            color: AppColors.cream,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsetsDirectional.fromSTEB(
+                      AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                  child: Row(
+                    children: [
+                      a11yButton(
+                        label: 'common.back'.tr(),
+                        child: FlutterFlowIconButton(
+                          borderRadius: 8.0,
+                          buttonSize: 48.0,
+                          fillColor: Colors.transparent,
+                          icon: appBackIcon(context),
+                          onPressed: () => context.pop(),
                         ),
-                        Expanded(
-                          child: Text('التحكم بالصوت',
-                              textAlign: TextAlign.end, style: AppText.title()),
+                      ),
+                      Expanded(
+                        child: Text('physical.title'.tr(),
+                            textAlign: TextAlign.start, style: AppText.title()),
+                      ),
+                      a11yButton(
+                        label: 'physical.setQuickContact'.tr(),
+                        child: FlutterFlowIconButton(
+                          borderRadius: 8.0,
+                          buttonSize: 48.0,
+                          fillColor: Colors.transparent,
+                          icon: const Icon(Icons.contact_phone_outlined,
+                              color: AppColors.mutedOnCream, size: 24.0),
+                          onPressed: _editQuickContactDialog,
                         ),
-                        a11yButton(
-                          label: 'تعيين رقم الاتصال السريع',
-                          child: FlutterFlowIconButton(
-                            borderRadius: 8.0,
-                            buttonSize: 48.0,
-                            fillColor: Colors.transparent,
-                            icon: const Icon(Icons.contact_phone_outlined,
-                                color: AppColors.mutedOnCream, size: 24.0),
-                            onPressed: _editQuickContactDialog,
-                          ),
-                        ),
-                      ].divide(const SizedBox(width: AppSpacing.sm)),
-                    ),
+                      ),
+                    ].divide(const SizedBox(width: AppSpacing.sm)),
                   ),
-                  Container(height: 1.0, color: AppColors.border),
-                ],
-              ),
+                ),
+                Container(height: 1.0, color: AppColors.border),
+              ],
             ),
+          ),
             // Scrollable body
             Expanded(
               child: SingleChildScrollView(
@@ -374,8 +383,9 @@ class _PhysicalAssistanceModeWidgetState
                       ),
                       child: a11yLive(Text(
                         listening
-                            ? '🎙 جارٍ الاستماع...'
-                            : (_model.lastVoiceCommand ?? 'انتظار الأمر الصوتي'),
+                            ? 'physical.listeningMic'.tr()
+                            : (_model.lastVoiceCommand ??
+                                'physical.waitingForCommand'.tr()),
                         textAlign: TextAlign.center,
                         style: AppText.body(
                             color: listening
@@ -388,8 +398,8 @@ class _PhysicalAssistanceModeWidgetState
                     Center(
                       child: a11yButton(
                         label: listening
-                            ? 'جارٍ الاستماع'
-                            : 'اضغط وتكلم لإعطاء أمر صوتي',
+                            ? 'physical.listening'.tr()
+                            : 'physical.tapToSpeakHint'.tr(),
                         enabled: !listening,
                         child: GestureDetector(
                           onTap: listening ? null : _handleVoiceCommand,
@@ -431,7 +441,9 @@ class _PhysicalAssistanceModeWidgetState
                     ),
                     const SizedBox(height: AppSpacing.md),
                     Text(
-                      listening ? 'جارٍ الاستماع...' : 'اضغط وتكلم',
+                      listening
+                          ? 'physical.listeningEllipsis'.tr()
+                          : 'physical.tapAndSpeak'.tr(),
                       textAlign: TextAlign.center,
                       style: AppText.title(
                           color: listening
@@ -441,7 +453,7 @@ class _PhysicalAssistanceModeWidgetState
                     // Mild-cognitive support: permanent caption under the
                     // primary action.
                     if (StudentProfile.current.showsPermanentTooltips)
-                      permanentCaption('يسمع أمرك الصوتي وينفّذه'),
+                      permanentCaption('physical.micCaption'.tr()),
                     const SizedBox(height: AppSpacing.xl),
                     // Commands section — hidden behind "خيارات" for
                     // neurodevelopmental / mild-cognitive support.
@@ -450,8 +462,8 @@ class _PhysicalAssistanceModeWidgetState
                       secondary: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Text('الأوامر المدعومة',
-                              textAlign: TextAlign.end,
+                          Text('physical.supportedCommands'.tr(),
+                              textAlign: TextAlign.start,
                               style: AppText.body(color: AppColors.onCream)),
                           const SizedBox(height: AppSpacing.md),
                           ...commands.map(
@@ -470,7 +482,7 @@ class _PhysicalAssistanceModeWidgetState
                                     const SizedBox(width: AppSpacing.md),
                                     Expanded(
                                       child: Text('"${cmd.label}"',
-                                          textAlign: TextAlign.end,
+                                          textAlign: TextAlign.start,
                                           style: AppText.body(
                                               color: AppColors.onCream)),
                                     ),
@@ -488,7 +500,6 @@ class _PhysicalAssistanceModeWidgetState
             ),
           ],
         ),
-      ),
-    );
+      );
   }
 }

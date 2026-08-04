@@ -7,7 +7,7 @@ import '/student/student_profile_provider.dart';
 import '/theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
-import 'dart:ui' as ui;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -58,97 +58,94 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
     context.watch<StudentProfileProvider>();
     final profile = StudentProfile.current;
 
-    return Directionality(
-      textDirection: ui.TextDirection.rtl,
-      child: Scaffold(
-        key: scaffoldKey,
-        backgroundColor: AppColors.cream,
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(
-                AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                _header(),
-                const SizedBox(height: AppSpacing.xl),
-                Text(
-                  'اختر نوع الدعم الذي تحتاجه',
-                  textAlign: TextAlign.start,
-                  style: AppText.label(),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Expanded(
-                  child: Column(
-                    children: [
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _isModeEnabled(profile, 'DEAF_MODE')
-                                  ? _modeCard(
-                                      icon: Icons.hearing_rounded,
-                                      title: 'صمم / ضعف سمع',
-                                      desc: 'ترجمة فورية للمحاضرات',
-                                      route:
-                                          DeafModeTranscriptionWidget.routeName,
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: _isModeEnabled(profile, 'VISUAL_MODE')
-                                  ? _modeCard(
-                                      icon: Icons.visibility_rounded,
-                                      title: 'إعاقة بصرية',
-                                      desc: 'وصف المحيط والنصوص',
-                                      route:
-                                          VisualAssistanceModeWidget.routeName,
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
-                        ),
+    return Scaffold(
+      key: scaffoldKey,
+      backgroundColor: AppColors.cream,
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+              AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.md),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header(),
+              const SizedBox(height: AppSpacing.xl),
+              Text(
+                'home.chooseSupport'.tr(),
+                textAlign: TextAlign.start,
+                style: AppText.label(),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              Expanded(
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _isModeEnabled(profile, 'DEAF_MODE')
+                                ? _modeCard(
+                                    icon: Icons.hearing_rounded,
+                                    title: 'modes.deaf.title'.tr(),
+                                    desc: 'modes.deaf.desc'.tr(),
+                                    route:
+                                        DeafModeTranscriptionWidget.routeName,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _isModeEnabled(profile, 'VISUAL_MODE')
+                                ? _modeCard(
+                                    icon: Icons.visibility_rounded,
+                                    title: 'modes.visual.title'.tr(),
+                                    desc: 'modes.visual.desc'.tr(),
+                                    route:
+                                        VisualAssistanceModeWidget.routeName,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
-                      const SizedBox(height: AppSpacing.md),
-                      Expanded(
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Expanded(
-                              child: _isModeEnabled(profile, 'LEARNING_MODE')
-                                  ? _modeCard(
-                                      icon: Icons.menu_book_rounded,
-                                      title: 'صعوبات تعلم',
-                                      desc: 'تبسيط المواد الدراسية',
-                                      route:
-                                          LearningSupportModeWidget.routeName,
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                            const SizedBox(width: AppSpacing.md),
-                            Expanded(
-                              child: _isModeEnabled(profile, 'PHYSICAL_MODE')
-                                  ? _modeCard(
-                                      icon: Icons.record_voice_over_rounded,
-                                      title: 'إعاقة حركية',
-                                      desc: 'التحكم بالصوت',
-                                      route: PhysicalAssistanceModeWidget
-                                          .routeName,
-                                    )
-                                  : const SizedBox.shrink(),
-                            ),
-                          ],
-                        ),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Expanded(
+                            child: _isModeEnabled(profile, 'LEARNING_MODE')
+                                ? _modeCard(
+                                    icon: Icons.menu_book_rounded,
+                                    title: 'modes.learning.title'.tr(),
+                                    desc: 'modes.learning.desc'.tr(),
+                                    route:
+                                        LearningSupportModeWidget.routeName,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: _isModeEnabled(profile, 'PHYSICAL_MODE')
+                                ? _modeCard(
+                                    icon: Icons.record_voice_over_rounded,
+                                    title: 'modes.physical.title'.tr(),
+                                    desc: 'modes.physical.desc'.tr(),
+                                    route: PhysicalAssistanceModeWidget
+                                        .routeName,
+                                  )
+                                : const SizedBox.shrink(),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: AppSpacing.md),
-                _footer(),
-              ],
-            ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              _footer(),
+            ],
           ),
         ),
       ),
@@ -183,9 +180,17 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
             crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text('شادو', style: AppText.display()),
-              Text('مرافقك الأكاديمي الذكي', style: AppText.label()),
+              Text('app.title'.tr(), style: AppText.display()),
+              Text('app.tagline'.tr(), style: AppText.label()),
             ],
+          ),
+        ),
+        a11yButton(
+          label: 'home.settings'.tr(),
+          child: IconButton(
+            icon: const Icon(Icons.settings_rounded,
+                color: AppColors.mutedOnCream),
+            onPressed: () => context.pushNamed(SettingsScreen.routeName),
           ),
         ),
       ],
@@ -262,9 +267,9 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('هل تحتاج إلى مساعدة؟ ', style: AppText.label()),
+            Text('home.needHelp'.tr(), style: AppText.label()),
             Text(
-              'تواصل معنا',
+              'home.contactUs'.tr(),
               style: AppText.label(color: AppColors.onCream)
                   .copyWith(fontWeight: FontWeight.w700),
             ),
@@ -276,12 +281,12 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
         if (kDebugMode) ...[
           const SizedBox(height: AppSpacing.sm),
           a11yButton(
-            label: 'أدوات المطوّر',
+            label: 'home.devTools'.tr(),
             child: TextButton.icon(
               onPressed: () => context.pushNamed(DevToolsPage.routeName),
               icon: const Icon(Icons.science_outlined,
                   size: 16, color: AppColors.mutedOnCream),
-              label: Text('أدوات المطوّر',
+              label: Text('home.devTools'.tr(),
                   style: AppText.label().copyWith(
                       decoration: TextDecoration.underline)),
             ),

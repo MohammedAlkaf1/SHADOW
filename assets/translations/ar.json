@@ -1,0 +1,145 @@
+{
+  "app": {
+    "title": "شادو",
+    "tagline": "مرافقك الأكاديمي الذكي"
+  },
+  "home": {
+    "chooseSupport": "اختر نوع الدعم الذي تحتاجه",
+    "needHelp": "هل تحتاج إلى مساعدة؟ ",
+    "contactUs": "تواصل معنا",
+    "devTools": "أدوات المطوّر",
+    "settings": "الإعدادات"
+  },
+  "modes": {
+    "deaf": {
+      "title": "صمم / ضعف سمع",
+      "desc": "ترجمة فورية للمحاضرات"
+    },
+    "visual": {
+      "title": "إعاقة بصرية",
+      "desc": "وصف المحيط والنصوص"
+    },
+    "learning": {
+      "title": "صعوبات تعلم",
+      "desc": "تبسيط المواد الدراسية"
+    },
+    "physical": {
+      "title": "إعاقة حركية",
+      "desc": "التحكم بالصوت"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "back": "رجوع",
+    "language": "لغة التطبيق",
+    "languageHint": "تُطبَّق فوراً — تغيّر لغة الواجهة، ولغة تفريغ Deepgram، ولغة برومبتات الذكاء الاصطناعي معاً",
+    "languageArabic": "العربية",
+    "languageEnglish": "English"
+  },
+  "common": {
+    "back": "رجوع",
+    "close": "إغلاق",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "clear": "مسح",
+    "copy": "نسخ",
+    "delete": "حذف",
+    "settings": "الإعدادات",
+    "connected": "متصل",
+    "processing": "جارٍ المعالجة...",
+    "noResultYet": "لا توجد نتيجة بعد",
+    "fontSize": "حجم الخط"
+  },
+  "deaf": {
+    "title": "تحويل الكلام إلى نص",
+    "savedTranscripts": "النصوص المحفوظة",
+    "messageAssistant": "صياغة رسالة للأستاذ",
+    "sessionTitle": "محاضرة اليوم",
+    "recording": "جارٍ التسجيل",
+    "startRecording": "بدء التسجيل",
+    "stopRecording": "إيقاف التسجيل",
+    "recordingInProgress": "جاري التسجيل...",
+    "pressToRecord": "اضغط للتسجيل",
+    "recordCaption": "يسجل صوت المحاضرة ويحوّله إلى نص",
+    "noTextToSave": "لا يوجد نص لحفظه",
+    "textSaved": "تم حفظ النص",
+    "noTextToCopy": "لا يوجد نص لنسخه",
+    "textCopied": "تم نسخ النص",
+    "micBlocked": "الميكروفون محظور. فعّله من إعدادات التطبيق للسماح بالتسجيل.",
+    "micPermissionNeeded": "يرجى السماح باستخدام الميكروفون لتشغيل التسجيل.",
+    "readAloud": "اقرأ لي",
+    "readAloudFull": "اقرأ لي النص",
+    "stopReading": "إيقاف القراءة",
+    "summarizeNow": "لخّص لي الآن",
+    "noSummaryYet": "لا يوجد ملخص بعد",
+    "showSummary": "عرض آخر ملخص",
+    "hideSummary": "إخفاء الملخص",
+    "messageAssistantTitle": "صياغة رسالة للأستاذ",
+    "messageAssistantSubtitle": "اكتب موضوع الرسالة، وسنقترح لك صياغة مهذبة قصيرة.",
+    "messageAssistantHint": "مثال: طلب تأجيل تسليم الواجب بسبب ظرف صحي",
+    "generateMessage": "توليد الصياغة",
+    "copyMessage": "نسخ الرسالة",
+    "messageCopied": "تم نسخ الرسالة"
+  },
+  "visual": {
+    "title": "التعرف البصري",
+    "analyzing": "جارٍ التحليل...",
+    "instruction": "وجّه الكاميرا نحو الأشياء أو النصوص ليتم التعرف عليها.",
+    "describeAction": "صف المحيط",
+    "readTextAction": "اقرأ النص",
+    "describeCaption": "يصف ما تراه الكاميرا",
+    "readTextCaption": "يقرأ النص الموجود في الصورة",
+    "cameraEmptyState": "اختر \"صف المحيط\" أو \"اقرأ النص\" لالتقاط صورة",
+    "statusAnalyzing": "جارٍ التحليل",
+    "statusReady": "جاهز",
+    "resultTitle": "نتيجة التحليل",
+    "stopListening": "إيقاف الاستماع",
+    "listenToResult": "استمع للنتيجة",
+    "stop": "إيقاف"
+  },
+  "learning": {
+    "title": "دعم التعلم",
+    "uploadTitle": "رفع ملف PDF للمحاضرة",
+    "chooseFile": "اختر ملفاً",
+    "filePickFailed": "تعذّر فتح الملف. اختر ملف PDF محفوظاً على الجهاز (وليس من التخزين السحابي مثل OneDrive).",
+    "chooseFileFirst": "يرجى اختيار ملف PDF أولاً",
+    "assistant": "المساعد الذكي",
+    "processing": "جارٍ المعالجة...",
+    "result": "النتيجة",
+    "stopReading": "إيقاف القراءة",
+    "readResultAloud": "اقرأ لي النتيجة",
+    "readAloud": "اقرأ لي",
+    "summarize": "تلخيص",
+    "summarizeCaption": "يعطيك أهم النقاط",
+    "simplify": "تبسيط",
+    "simplifyCaption": "يشرح المحتوى بأسلوب أسهل",
+    "quiz": "أسئلة مراجعة",
+    "quizCaption": "يعطيك أسئلة للتدرّب"
+  },
+  "physical": {
+    "title": "التحكم بالصوت",
+    "setQuickContact": "تعيين رقم الاتصال السريع",
+    "quickContact": "اتصال سريع",
+    "quickContactHintUnset": "لم يتم تعيين رقم بعد، اضغط للإضافة",
+    "quickContactHintSet": "اتصال بالرقم المحفوظ",
+    "listeningMic": "🎙 جارٍ الاستماع...",
+    "waitingForCommand": "انتظار الأمر الصوتي",
+    "listening": "جارٍ الاستماع",
+    "tapToSpeakHint": "اضغط وتكلم لإعطاء أمر صوتي",
+    "listeningEllipsis": "جارٍ الاستماع...",
+    "tapAndSpeak": "اضغط وتكلم",
+    "micCaption": "يسمع أمرك الصوتي وينفّذه",
+    "supportedCommands": "الأوامر المدعومة",
+    "confirmCommandTitle": "تأكيد الأمر",
+    "confirmCommandBody": "سمعتك تقول: \"{}\". تنفيذ؟",
+    "execute": "تنفيذ",
+    "callFailed": "تعذّر بدء الاتصال بالرقم {}",
+    "quickContactDialogTitle": "رقم الاتصال السريع",
+    "quickContactDialogBody": "أدخل رقم الشخص الذي تريد الاتصال به بسرعة (مثل مرافق أو أحد أفراد العائلة). يُحفظ على جهازك فقط.",
+    "openDeafMode": "افتح وضع الصمم",
+    "openVisualMode": "افتح وضع البصرية",
+    "openLearningMode": "افتح وضع التعلم",
+    "goHome": "ارجع للرئيسية",
+    "callQuickContact": "اتصل بجهة الاتصال السريع"
+  }
+}

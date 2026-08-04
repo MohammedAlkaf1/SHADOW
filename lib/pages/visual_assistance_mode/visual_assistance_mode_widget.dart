@@ -11,6 +11,7 @@ import '/style/category_widgets.dart';
 import '/theme.dart';
 import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
@@ -120,57 +121,55 @@ class _VisualAssistanceModeWidgetState
   Widget build(BuildContext context) {
     context.watch<StudentProfileProvider>();
     final analyzing = _model.isAnalyzing;
-    return Directionality(
-      textDirection: ui.TextDirection.rtl,
-      child: GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        child: Scaffold(
-          key: scaffoldKey,
-          backgroundColor: AppColors.cream,
-          body: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Header
-              Container(
-                color: AppColors.cream,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsetsDirectional.fromSTEB(
-                          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.center,
-                        children: [
-                          a11yButton(
-                            label: 'رجوع',
-                            child: FlutterFlowIconButton(
-                              borderRadius: 8.0,
-                              buttonSize: 48.0,
-                              fillColor: Colors.transparent,
-                              icon: appBackIcon(context),
-                              onPressed: () async {
-                                context.pop();
-                              },
-                            ),
+    return GestureDetector(
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: AppColors.cream,
+        body: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Container(
+              color: AppColors.cream,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsetsDirectional.fromSTEB(
+                        AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        a11yButton(
+                          label: 'common.back'.tr(),
+                          child: FlutterFlowIconButton(
+                            borderRadius: 8.0,
+                            buttonSize: 48.0,
+                            fillColor: Colors.transparent,
+                            icon: appBackIcon(context),
+                            onPressed: () async {
+                              context.pop();
+                            },
                           ),
-                          Expanded(
-                            child: Text(
-                              'التعرف البصري',
-                              textAlign: TextAlign.end,
-                              style: AppText.title(),
-                            ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            'visual.title'.tr(),
+                            textAlign: TextAlign.start,
+                            style: AppText.title(),
                           ),
-                        ].divide(const SizedBox(width: AppSpacing.sm)),
-                      ),
+                        ),
+                      ].divide(const SizedBox(width: AppSpacing.sm)),
                     ),
-                    Container(height: 1.0, color: AppColors.border),
-                  ],
-                ),
+                  ),
+                  Container(height: 1.0, color: AppColors.border),
+                ],
               ),
+            ),
               // Scrollable body
               Expanded(
                 child: SingleChildScrollView(
@@ -237,7 +236,7 @@ class _VisualAssistanceModeWidgetState
                                           const CircularProgressIndicator(
                                               color: AppColors.terracotta),
                                           const SizedBox(height: AppSpacing.md),
-                                          Text('جارٍ التحليل...',
+                                          Text('visual.analyzing'.tr(),
                                               style: AppText.body(
                                                   color: AppColors.onNavy)),
                                         ],
@@ -274,8 +273,8 @@ class _VisualAssistanceModeWidgetState
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
                               child: Text(
-                                'وجّه الكاميرا نحو الأشياء أو النصوص ليتم التعرف عليها.',
-                                textAlign: TextAlign.end,
+                                'visual.instruction'.tr(),
+                                textAlign: TextAlign.start,
                                 style: AppText.label(),
                               ),
                             ),
@@ -290,8 +289,7 @@ class _VisualAssistanceModeWidgetState
             ],
           ),
         ),
-      ),
-    );
+      );
   }
 
   /// Both action cards side by side normally. Neurodevelopmental / mild
@@ -302,17 +300,17 @@ class _VisualAssistanceModeWidgetState
     final tooltips = StudentProfile.current.showsPermanentTooltips;
     final describeCard = _actionCard(
       icon: Icons.visibility_rounded,
-      label: 'صف المحيط',
+      label: 'visual.describeAction'.tr(),
       enabled: !analyzing,
       onTap: () => _captureAndAnalyze('describe'),
-      caption: tooltips ? 'يصف ما تراه الكاميرا' : null,
+      caption: tooltips ? 'visual.describeCaption'.tr() : null,
     );
     final readTextCard = _actionCard(
       icon: Icons.text_fields_rounded,
-      label: 'اقرأ النص',
+      label: 'visual.readTextAction'.tr(),
       enabled: !analyzing,
       onTap: () => _captureAndAnalyze('read_text'),
-      caption: tooltips ? 'يقرأ النص الموجود في الصورة' : null,
+      caption: tooltips ? 'visual.readTextCaption'.tr() : null,
     );
 
     if (StudentProfile.current.hidesSecondaryActions) {
@@ -354,7 +352,7 @@ class _VisualAssistanceModeWidgetState
                 size: 48.0, color: AppColors.onNavy.withValues(alpha: 0.7)),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'اختر "صف المحيط" أو "اقرأ النص" لالتقاط صورة',
+              'visual.cameraEmptyState'.tr(),
               textAlign: TextAlign.center,
               style: AppText.label(color: AppColors.mutedOnNavy),
             ),
@@ -389,7 +387,10 @@ class _VisualAssistanceModeWidgetState
                 ),
               ),
               const SizedBox(width: AppSpacing.sm),
-              Text(analyzing ? 'جارٍ التحليل' : 'جاهز',
+              Text(
+                  analyzing
+                      ? 'visual.statusAnalyzing'.tr()
+                      : 'visual.statusReady'.tr(),
                   style: AppText.label(color: AppColors.onNavy)),
             ],
           ),
@@ -404,12 +405,12 @@ class _VisualAssistanceModeWidgetState
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.start,
               children: [
-                Text('نتيجة التحليل', style: AppText.body(color: AppColors.onCream)),
+                Text('visual.resultTitle'.tr(), style: AppText.body(color: AppColors.onCream)),
                 const SizedBox(width: AppSpacing.sm),
                 const Icon(Icons.auto_awesome_rounded,
                     color: AppColors.terracotta, size: 18.0),
@@ -418,14 +419,16 @@ class _VisualAssistanceModeWidgetState
             const SizedBox(height: AppSpacing.sm),
             a11yLive(Text(
               _model.analysisResult!,
-              textAlign: TextAlign.end,
+              textAlign: TextAlign.start,
               style: AppText.body(),
             )),
             const SizedBox(height: AppSpacing.md),
             Align(
               alignment: AlignmentDirectional.centerStart,
               child: a11yButton(
-                label: _model.isSpeaking ? 'إيقاف الاستماع' : 'استمع للنتيجة',
+                label: _model.isSpeaking
+                    ? 'visual.stopListening'.tr()
+                    : 'visual.listenToResult'.tr(),
                 child: Material(
                   color: _model.isSpeaking
                       ? AppColors.terracotta
@@ -448,7 +451,10 @@ class _VisualAssistanceModeWidgetState
                             size: 18.0,
                           ),
                           const SizedBox(width: AppSpacing.sm),
-                          Text(_model.isSpeaking ? 'إيقاف' : 'استمع للنتيجة',
+                          Text(
+                              _model.isSpeaking
+                                  ? 'visual.stop'.tr()
+                                  : 'visual.listenToResult'.tr(),
                               style: AppText.button(color: AppColors.onNavy)),
                         ],
                       ),

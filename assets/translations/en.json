@@ -1,0 +1,145 @@
+{
+  "app": {
+    "title": "Shadow",
+    "tagline": "Your smart academic companion"
+  },
+  "home": {
+    "chooseSupport": "Choose the kind of support you need",
+    "needHelp": "Need help? ",
+    "contactUs": "Contact us",
+    "devTools": "Developer Tools",
+    "settings": "Settings"
+  },
+  "modes": {
+    "deaf": {
+      "title": "Deaf / Hard of Hearing",
+      "desc": "Live lecture captioning"
+    },
+    "visual": {
+      "title": "Visual Disability",
+      "desc": "Describe surroundings and text"
+    },
+    "learning": {
+      "title": "Learning Difficulties",
+      "desc": "Simplify course materials"
+    },
+    "physical": {
+      "title": "Motor Disability",
+      "desc": "Voice control"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "back": "Back",
+    "language": "App language",
+    "languageHint": "Applies immediately — changes the interface language, the Deepgram transcription language, and the AI prompt language together",
+    "languageArabic": "العربية",
+    "languageEnglish": "English"
+  },
+  "common": {
+    "back": "Back",
+    "close": "Close",
+    "cancel": "Cancel",
+    "save": "Save",
+    "clear": "Clear",
+    "copy": "Copy",
+    "delete": "Delete",
+    "settings": "Settings",
+    "connected": "Connected",
+    "processing": "Processing...",
+    "noResultYet": "No result yet",
+    "fontSize": "Font size"
+  },
+  "deaf": {
+    "title": "Speech to Text",
+    "savedTranscripts": "Saved Transcripts",
+    "messageAssistant": "Compose Message to Instructor",
+    "sessionTitle": "Today's Lecture",
+    "recording": "Recording",
+    "startRecording": "Start Recording",
+    "stopRecording": "Stop Recording",
+    "recordingInProgress": "Recording...",
+    "pressToRecord": "Tap to Record",
+    "recordCaption": "Records the lecture and converts it to text",
+    "noTextToSave": "No text to save",
+    "textSaved": "Text saved",
+    "noTextToCopy": "No text to copy",
+    "textCopied": "Text copied",
+    "micBlocked": "Microphone access is blocked. Enable it in the app's system settings to record.",
+    "micPermissionNeeded": "Please allow microphone access to start recording.",
+    "readAloud": "Read Aloud",
+    "readAloudFull": "Read the Text Aloud",
+    "stopReading": "Stop Reading",
+    "summarizeNow": "Summarize Now",
+    "noSummaryYet": "No summary yet",
+    "showSummary": "Show Last Summary",
+    "hideSummary": "Hide Summary",
+    "messageAssistantTitle": "Compose Message to Instructor",
+    "messageAssistantSubtitle": "Write the message topic, and we'll suggest a short, polite phrasing.",
+    "messageAssistantHint": "Example: request an assignment deadline extension due to a health issue",
+    "generateMessage": "Generate Message",
+    "copyMessage": "Copy Message",
+    "messageCopied": "Message copied"
+  },
+  "visual": {
+    "title": "Visual Recognition",
+    "analyzing": "Analyzing...",
+    "instruction": "Point the camera at objects or text to have them recognized.",
+    "describeAction": "Describe Surroundings",
+    "readTextAction": "Read Text",
+    "describeCaption": "Describes what the camera sees",
+    "readTextCaption": "Reads the text present in the image",
+    "cameraEmptyState": "Choose \"Describe Surroundings\" or \"Read Text\" to capture an image",
+    "statusAnalyzing": "Analyzing",
+    "statusReady": "Ready",
+    "resultTitle": "Analysis Result",
+    "stopListening": "Stop Listening",
+    "listenToResult": "Listen to Result",
+    "stop": "Stop"
+  },
+  "learning": {
+    "title": "Learning Support",
+    "uploadTitle": "Upload a Lecture PDF",
+    "chooseFile": "Choose a File",
+    "filePickFailed": "Couldn't open the file. Choose a PDF saved on the device (not from cloud storage like OneDrive).",
+    "chooseFileFirst": "Please choose a PDF file first",
+    "assistant": "AI Assistant",
+    "processing": "Processing...",
+    "result": "Result",
+    "stopReading": "Stop Reading",
+    "readResultAloud": "Read the Result Aloud",
+    "readAloud": "Read Aloud",
+    "summarize": "Summarize",
+    "summarizeCaption": "Gives you the key points",
+    "simplify": "Simplify",
+    "simplifyCaption": "Explains the content more simply",
+    "quiz": "Review Questions",
+    "quizCaption": "Gives you practice questions"
+  },
+  "physical": {
+    "title": "Voice Control",
+    "setQuickContact": "Set Quick Contact Number",
+    "quickContact": "Quick Contact",
+    "quickContactHintUnset": "No number set yet, tap to add one",
+    "quickContactHintSet": "Call the saved number",
+    "listeningMic": "🎙 Listening...",
+    "waitingForCommand": "Waiting for a voice command",
+    "listening": "Listening",
+    "tapToSpeakHint": "Tap and speak to give a voice command",
+    "listeningEllipsis": "Listening...",
+    "tapAndSpeak": "Tap and Speak",
+    "micCaption": "Listens to your voice command and carries it out",
+    "supportedCommands": "Supported Commands",
+    "confirmCommandTitle": "Confirm Command",
+    "confirmCommandBody": "I heard you say: \"{}\". Run it?",
+    "execute": "Run",
+    "callFailed": "Couldn't start a call to {}",
+    "quickContactDialogTitle": "Quick Contact Number",
+    "quickContactDialogBody": "Enter the number of the person you want to call quickly (such as a companion or family member). Saved on your device only.",
+    "openDeafMode": "Open deaf mode",
+    "openVisualMode": "Open visual mode",
+    "openLearningMode": "Open learning mode",
+    "goHome": "Go back to home",
+    "callQuickContact": "Call the quick contact"
+  }
+}

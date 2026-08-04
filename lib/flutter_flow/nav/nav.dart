@@ -83,6 +83,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: DevToolsPage.routePath,
           builder: (context, params) => const DevToolsPage(),
         ),
+        FFRoute(
+          name: SettingsScreen.routeName,
+          path: SettingsScreen.routePath,
+          builder: (context, params) => const SettingsScreen(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 
