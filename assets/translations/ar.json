@@ -57,7 +57,9 @@
     "connected": "متصل",
     "processing": "جارٍ المعالجة...",
     "noResultYet": "لا توجد نتيجة بعد",
-    "fontSize": "حجم الخط"
+    "fontSize": "حجم الخط",
+    "options": "خيارات",
+    "hideOptions": "إخفاء الخيارات"
   },
   "deaf": {
     "title": "تحويل الكلام إلى نص",

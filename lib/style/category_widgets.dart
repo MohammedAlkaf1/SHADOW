@@ -5,6 +5,7 @@
 //   - permanentCaption: an always-visible caption under an action button,
 //     for StudentProfile.showsPermanentTooltips.
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '/theme.dart';
@@ -46,7 +47,8 @@ class _CollapsibleSecondaryActionsState
               size: 16,
               color: AppColors.mutedOnCream,
             ),
-            label: Text(_expanded ? 'إخفاء الخيارات' : 'خيارات',
+            label: Text(
+                _expanded ? 'common.hideOptions'.tr() : 'common.options'.tr(),
                 style: AppText.label()),
           ),
         ),

@@ -57,7 +57,9 @@
     "connected": "Connected",
     "processing": "Processing...",
     "noResultYet": "No result yet",
-    "fontSize": "Font size"
+    "fontSize": "Font size",
+    "options": "Options",
+    "hideOptions": "Hide Options"
   },
   "deaf": {
     "title": "Speech to Text",
