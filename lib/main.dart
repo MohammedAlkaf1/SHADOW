@@ -11,6 +11,7 @@ import 'flutter_flow/nav/nav.dart';
 import 'index.dart';
 import 'services/app_prefs.dart';
 import 'student/student_profile_provider.dart';
+import 'theme.dart' show AppColors;
 
 const List<Locale> kSupportedLocales = [Locale('ar'), Locale('en')];
 
@@ -58,11 +59,20 @@ class MyApp extends StatefulWidget {
       context.findAncestorStateOfType<_MyAppState>()!;
 }
 
-class _MyAppState extends State<MyApp> {
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   ThemeMode _themeMode = FlutterFlowTheme.themeMode;
 
   late AppStateNotifier _appStateNotifier;
   late GoRouter _router;
+
+  /// The actually-rendered brightness for the current [_themeMode]: itself
+  /// for light/dark, or the OS's current preference for system/auto.
+  Brightness get _resolvedBrightness => switch (_themeMode) {
+        ThemeMode.light => Brightness.light,
+        ThemeMode.dark => Brightness.dark,
+        ThemeMode.system =>
+          WidgetsBinding.instance.platformDispatcher.platformBrightness,
+      };
   String getRoute([RouteMatch? routeMatch]) {
     final RouteMatch lastMatch =
         routeMatch ?? _router.routerDelegate.currentConfiguration.last;
@@ -82,6 +92,25 @@ class _MyAppState extends State<MyApp> {
 
     _appStateNotifier = AppStateNotifier.instance;
     _router = createRouter(_appStateNotifier);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  // AppColors.x getters aren't themselves listenable, so a plain setState
+  // here wouldn't reach screens deeper in the router's page stack that read
+  // them directly (only widgets bound to an actual InheritedWidget — like
+  // Theme — get rebuilt automatically on ancestor change). MaterialApp's
+  // `key` below, keyed on the resolved brightness, is what forces a full
+  // rebuild of the whole tree — including the currently-displayed page —
+  // whenever that brightness actually flips.
+  @override
+  void didChangePlatformBrightness() {
+    if (_themeMode == ThemeMode.system) safeSetState(() {});
   }
 
   void setThemeMode(ThemeMode mode) => safeSetState(() {
@@ -91,7 +120,11 @@ class _MyAppState extends State<MyApp> {
 
   @override
   Widget build(BuildContext context) {
+    final brightness = _resolvedBrightness;
+    AppColors.brightness = brightness;
+
     return MaterialApp.router(
+      key: ValueKey(brightness),
       debugShowCheckedModeBanner: false,
       title: 'شادو',
       // From easy_localization: the Global*Localizations delegates plus its

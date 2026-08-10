@@ -187,7 +187,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
         a11yButton(
           label: 'home.settings'.tr(),
           child: IconButton(
-            icon: const Icon(Icons.settings_rounded,
+            icon: Icon(Icons.settings_rounded,
                 color: AppColors.mutedOnCream),
             onPressed: () => context.pushNamed(SettingsScreen.routeName),
           ),
@@ -226,7 +226,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                 Container(
                   width: 56.0,
                   height: 56.0,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: AppColors.surface,
                     shape: BoxShape.circle,
                   ),
@@ -283,7 +283,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
             label: 'home.devTools'.tr(),
             child: TextButton.icon(
               onPressed: () => context.pushNamed(DevToolsPage.routeName),
-              icon: const Icon(Icons.science_outlined,
+              icon: Icon(Icons.science_outlined,
                   size: 16, color: AppColors.mutedOnCream),
               label: Text('home.devTools'.tr(),
                   style: AppText.label().copyWith(

@@ -330,7 +330,7 @@ class _DeafModeTranscriptionWidgetState
       final term = match.group(0)!;
       spans.add(TextSpan(
         text: term,
-        style: const TextStyle(
+        style: TextStyle(
           color: AppColors.terracotta,
           decoration: TextDecoration.underline,
           fontWeight: FontWeight.w700,
@@ -466,7 +466,7 @@ class _DeafModeTranscriptionWidgetState
                                 borderRadius: 8.0,
                                 buttonSize: 48.0,
                                 fillColor: Colors.transparent,
-                                icon: const Icon(Icons.edit_note_rounded,
+                                icon: Icon(Icons.edit_note_rounded,
                                     color: AppColors.mutedOnCream, size: 24.0),
                                 onPressed: _openMessageAssistant,
                               ),
@@ -477,7 +477,7 @@ class _DeafModeTranscriptionWidgetState
                               borderRadius: 8.0,
                               buttonSize: 48.0,
                               fillColor: Colors.transparent,
-                              icon: const Icon(Icons.history_rounded,
+                              icon: Icon(Icons.history_rounded,
                                   color: AppColors.mutedOnCream, size: 24.0),
                               onPressed: _openSaved,
                             ),
@@ -488,7 +488,7 @@ class _DeafModeTranscriptionWidgetState
                               borderRadius: 8.0,
                               buttonSize: 48.0,
                               fillColor: Colors.transparent,
-                              icon: const Icon(Icons.settings_rounded,
+                              icon: Icon(Icons.settings_rounded,
                                   color: AppColors.mutedOnCream, size: 24.0),
                               onPressed: _showSettingsDialog,
                             ),
@@ -595,14 +595,14 @@ class _DeafModeTranscriptionWidgetState
                                   onPressed:
                                       _summarizingNow ? null : _summarizeNow,
                                   icon: _summarizingNow
-                                      ? const SizedBox(
+                                      ? SizedBox(
                                           width: 14,
                                           height: 14,
                                           child: CircularProgressIndicator(
                                               strokeWidth: 2,
                                               color: AppColors.terracotta),
                                         )
-                                      : const Icon(Icons.bolt_rounded,
+                                      : Icon(Icons.bolt_rounded,
                                           size: 16,
                                           color: AppColors.terracotta),
                                   label: Text('deaf.summarizeNow'.tr(),
@@ -661,9 +661,9 @@ class _DeafModeTranscriptionWidgetState
               ),
               // Controls
               Container(
-                decoration: const BoxDecoration(
+                decoration: BoxDecoration(
                   color: AppColors.surface,
-                  borderRadius: BorderRadius.only(
+                  borderRadius: const BorderRadius.only(
                     topLeft: Radius.circular(AppSpacing.lg),
                     topRight: Radius.circular(AppSpacing.lg),
                   ),
@@ -942,8 +942,8 @@ class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
                 style: AppText.title(color: AppColors.terracotta)),
             const SizedBox(height: AppSpacing.md),
             if (_definition == null && _error == null)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: AppSpacing.lg),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Center(
                   child:
                       CircularProgressIndicator(color: AppColors.terracotta),
@@ -1057,9 +1057,9 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
               decoration: InputDecoration(
                 hintText: 'deaf.messageAssistantHint'.tr(),
                 hintStyle: AppText.body(color: AppColors.mutedOnCream),
-                enabledBorder: const OutlineInputBorder(
+                enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: AppColors.border)),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: AppColors.navy, width: 2.0)),
               ),
             ),
@@ -1077,7 +1077,7 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                 ),
                 onPressed: _loading ? null : _generate,
                 child: _loading
-                    ? const SizedBox(
+                    ? SizedBox(
                         width: 20,
                         height: 20,
                         child: CircularProgressIndicator(
@@ -1116,7 +1116,7 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                               ),
                             );
                           },
-                          icon: const Icon(Icons.content_copy_rounded,
+                          icon: Icon(Icons.content_copy_rounded,
                               size: 16, color: AppColors.terracotta),
                           label: Text('deaf.copyMessage'.tr(),
                               style: AppText.label(color: AppColors.terracotta)),

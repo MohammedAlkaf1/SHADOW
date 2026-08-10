@@ -240,7 +240,7 @@ class _VisualAssistanceModeWidgetState
                                       child: Column(
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
-                                          const CircularProgressIndicator(
+                                          CircularProgressIndicator(
                                               color: AppColors.terracotta),
                                           const SizedBox(height: AppSpacing.md),
                                           Text('visual.analyzing'.tr(),
@@ -275,7 +275,7 @@ class _VisualAssistanceModeWidgetState
                         // Instruction
                         Row(
                           children: [
-                            const Icon(Icons.info_outline_rounded,
+                            Icon(Icons.info_outline_rounded,
                                 size: 20.0, color: AppColors.mutedOnCream),
                             const SizedBox(width: AppSpacing.sm),
                             Expanded(
@@ -420,7 +420,7 @@ class _VisualAssistanceModeWidgetState
               children: [
                 Text('visual.resultTitle'.tr(), style: AppText.body(color: AppColors.onCream)),
                 const SizedBox(width: AppSpacing.sm),
-                const Icon(Icons.auto_awesome_rounded,
+                Icon(Icons.auto_awesome_rounded,
                     color: AppColors.terracotta, size: 18.0),
               ],
             ),
@@ -505,7 +505,7 @@ class _VisualAssistanceModeWidgetState
                   Container(
                     width: 56.0,
                     height: 56.0,
-                    decoration: const BoxDecoration(
+                    decoration: BoxDecoration(
                         color: AppColors.surface, shape: BoxShape.circle),
                     alignment: Alignment.center,
                     child: Icon(icon, color: AppColors.navy, size: 28.0),

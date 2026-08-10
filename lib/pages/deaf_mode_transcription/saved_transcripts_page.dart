@@ -216,7 +216,7 @@ class _SavedTranscriptsPageState extends State<SavedTranscriptsPage> {
         elevation: 0,
         centerTitle: false,
         toolbarHeight: 64,
-        iconTheme: const IconThemeData(color: AppColors.onCream),
+        iconTheme: IconThemeData(color: AppColors.onCream),
         title: Text('النصوص المحفوظة', style: AppText.title()),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
@@ -237,7 +237,7 @@ class _SavedTranscriptsPageState extends State<SavedTranscriptsPage> {
         ],
       ),
       body: _loading
-          ? const Center(
+          ? Center(
               child: CircularProgressIndicator(color: AppColors.terracotta))
           : Column(
               children: [
@@ -246,7 +246,7 @@ class _SavedTranscriptsPageState extends State<SavedTranscriptsPage> {
                   label: 'مدة الاحتفاظ، $_retentionDays يوماً، اضغط للتغيير',
                   child: ListTile(
                     minVerticalPadding: 12,
-                    leading: const Icon(Icons.auto_delete_outlined,
+                    leading: Icon(Icons.auto_delete_outlined,
                         color: AppColors.terracotta),
                     title: Text('حذف تلقائي بعد $_retentionDays يوماً',
                         textAlign: TextAlign.end, style: AppText.body()),
@@ -288,7 +288,7 @@ class _SavedTranscriptsPageState extends State<SavedTranscriptsPage> {
                                 trailing: a11yButton(
                                   label: 'حذف',
                                   child: IconButton(
-                                    icon: const Icon(
+                                    icon: Icon(
                                         Icons.delete_outline_rounded,
                                         color: AppColors.error),
                                     onPressed: () => _confirmDeleteOne(t),

@@ -231,9 +231,9 @@ class _PhysicalAssistanceModeWidgetState
               decoration: InputDecoration(
                 hintText: '05xxxxxxxx',
                 hintStyle: AppText.body(color: AppColors.mutedOnCream),
-                enabledBorder: const OutlineInputBorder(
+                enabledBorder: OutlineInputBorder(
                     borderSide: BorderSide(color: AppColors.border)),
-                focusedBorder: const OutlineInputBorder(
+                focusedBorder: OutlineInputBorder(
                     borderSide:
                         BorderSide(color: AppColors.navy, width: 2.0)),
               ),
@@ -304,7 +304,7 @@ class _PhysicalAssistanceModeWidgetState
             onPressed: _quickContact,
             backgroundColor: AppColors.navy,
             foregroundColor: AppColors.onNavy,
-            icon: const Icon(Icons.phone_rounded, color: AppColors.onNavy),
+            icon: Icon(Icons.phone_rounded, color: AppColors.onNavy),
             label: Text('physical.quickContact'.tr(),
                 style: AppText.button(color: AppColors.onNavy)),
           ),
@@ -347,7 +347,7 @@ class _PhysicalAssistanceModeWidgetState
                           borderRadius: 8.0,
                           buttonSize: 48.0,
                           fillColor: Colors.transparent,
-                          icon: const Icon(Icons.contact_phone_outlined,
+                          icon: Icon(Icons.contact_phone_outlined,
                               color: AppColors.mutedOnCream, size: 24.0),
                           onPressed: _editQuickContactDialog,
                         ),
@@ -429,14 +429,14 @@ class _PhysicalAssistanceModeWidgetState
                             ),
                             alignment: Alignment.center,
                             child: listening
-                                ? const SizedBox(
+                                ? SizedBox(
                                     width: 52.0,
                                     height: 52.0,
                                     child: CircularProgressIndicator(
                                         strokeWidth: 3.0,
                                         color: AppColors.onNavy),
                                   )
-                                : const Icon(Icons.mic_rounded,
+                                : Icon(Icons.mic_rounded,
                                     color: AppColors.onNavy, size: 64.0),
                           ),
                         ),

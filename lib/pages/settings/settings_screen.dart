@@ -9,6 +9,7 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '/a11y.dart';
+import '/flutter_flow/flutter_flow_theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
 import '/main.dart' show kSupportedLocales;
@@ -28,6 +29,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   bool _loggedIn = false;
+  ThemeMode _themeMode = FlutterFlowTheme.themeMode;
 
   @override
   void initState() {
@@ -35,6 +37,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
     PlatformClient.isLoggedIn.then((value) {
       if (mounted) setState(() => _loggedIn = value);
     });
+  }
+
+  void _selectThemeMode(ThemeMode mode) {
+    if (_themeMode == mode) return;
+    setDarkModeSetting(context, mode); // persists + rebuilds MyApp
+    setState(() => _themeMode = mode);
   }
 
   Future<void> _selectLanguage(String languageCode) async {
@@ -138,6 +146,30 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+          const SizedBox(height: AppSpacing.lg),
+          Text('settings.darkMode'.tr(),
+              textAlign: TextAlign.start,
+              style: AppText.cardTitle(color: AppColors.onCream)),
+          const SizedBox(height: AppSpacing.md),
+          Container(
+            decoration: AppDecor.creamCard(),
+            child: Column(
+              children: [
+                _themeModeTile(
+                  mode: ThemeMode.system,
+                  label: 'settings.darkModeAuto'.tr(),
+                ),
+                _themeModeTile(
+                  mode: ThemeMode.light,
+                  label: 'settings.darkModeLight'.tr(),
+                ),
+                _themeModeTile(
+                  mode: ThemeMode.dark,
+                  label: 'settings.darkModeDark'.tr(),
+                ),
+              ],
+            ),
+          ),
           if (_loggedIn) ...[
             const SizedBox(height: AppSpacing.lg),
             Text('settings.account'.tr(),
@@ -153,7 +185,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       textAlign: TextAlign.start,
                       style: AppText.body(color: AppColors.terracotta)),
                   trailing:
-                      const Icon(Icons.logout_rounded, color: AppColors.terracotta),
+                      Icon(Icons.logout_rounded, color: AppColors.terracotta),
                   onTap: _confirmSignOut,
                 ),
               ),
@@ -180,6 +212,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
       // ignore: deprecated_member_use
       onChanged: (v) {
         if (v != null) _selectLanguage(v);
+      },
+      title: Text(label, textAlign: TextAlign.start, style: AppText.body()),
+    );
+  }
+
+  Widget _themeModeTile({
+    required ThemeMode mode,
+    required String label,
+  }) {
+    return RadioListTile<ThemeMode>(
+      value: mode,
+      // ignore: deprecated_member_use
+      groupValue: _themeMode,
+      activeColor: AppColors.terracotta,
+      // ignore: deprecated_member_use
+      onChanged: (v) {
+        if (v != null) _selectThemeMode(v);
       },
       title: Text(label, textAlign: TextAlign.start, style: AppText.body()),
     );

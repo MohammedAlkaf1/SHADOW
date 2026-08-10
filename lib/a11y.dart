@@ -43,12 +43,11 @@ Widget a11yLive(Widget child) =>
 /// right in RTL. Returns a plain [Icon] (not a Transform) so callers such as
 /// FlutterFlowIconButton — whose `icon` field is typed `Icon` — accept it; we
 /// pick the direction-correct glyph rather than flipping a widget.
-Icon appBackIcon(BuildContext context,
-    {Color color = AppColors.onCream, double size = 22}) {
+Icon appBackIcon(BuildContext context, {Color? color, double size = 22}) {
   final isRtl = Directionality.of(context) == TextDirection.rtl;
   return Icon(
     isRtl ? Icons.arrow_forward_ios_rounded : Icons.arrow_back_ios_rounded,
-    color: color,
+    color: color ?? AppColors.onCream,
     size: size,
   );
 }

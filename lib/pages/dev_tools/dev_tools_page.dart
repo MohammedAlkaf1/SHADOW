@@ -127,7 +127,7 @@ class _ProfileTab extends StatelessWidget {
         ),
         child: Row(
           children: [
-            const Icon(Icons.science_outlined, color: AppColors.terracotta),
+            Icon(Icons.science_outlined, color: AppColors.terracotta),
             const SizedBox(width: AppSpacing.sm),
             Expanded(
               child: Text(
@@ -294,14 +294,14 @@ class _MentorEventsTabState extends State<_MentorEventsTab> {
                 children: [
                   TextButton.icon(
                     onPressed: _clearAll,
-                    icon: const Icon(Icons.delete_sweep_rounded,
+                    icon: Icon(Icons.delete_sweep_rounded,
                         color: AppColors.error, size: 18),
                     label: Text('امسح كل الأحداث',
                         style: AppText.label(color: AppColors.error)),
                   ),
                   TextButton.icon(
                     onPressed: _load,
-                    icon: const Icon(Icons.refresh_rounded,
+                    icon: Icon(Icons.refresh_rounded,
                         size: 18, color: AppColors.mutedOnCream),
                     label: Text('تحديث', style: AppText.label()),
                   ),
@@ -314,7 +314,7 @@ class _MentorEventsTabState extends State<_MentorEventsTab> {
         ),
         Expanded(
           child: _loading
-              ? const Center(
+              ? Center(
                   child: CircularProgressIndicator(color: AppColors.terracotta))
               : _events.isEmpty
                   ? Center(
@@ -346,7 +346,7 @@ class _MentorEventsTabState extends State<_MentorEventsTab> {
           selected: selected,
           selectedColor: AppColors.navy,
           backgroundColor: AppColors.surface,
-          side: const BorderSide(color: AppColors.border),
+          side: BorderSide(color: AppColors.border),
           onSelected: (_) {
             setState(() => _filter = value);
             _load();

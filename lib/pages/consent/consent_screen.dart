@@ -63,7 +63,7 @@ class ConsentScreen extends StatelessWidget {
                                 BorderRadius.circular(AppSpacing.cardRadius),
                           ),
                           alignment: Alignment.center,
-                          child: const Icon(Icons.privacy_tip_outlined,
+                          child: Icon(Icons.privacy_tip_outlined,
                               size: 34.0, color: AppColors.onNavy),
                         ),
                         const SizedBox(height: AppSpacing.md),
@@ -128,7 +128,7 @@ class ConsentScreen extends StatelessWidget {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.onCream,
                       minimumSize: const Size.fromHeight(52.0),
-                      side: const BorderSide(color: AppColors.border, width: 1.5),
+                      side: BorderSide(color: AppColors.border, width: 1.5),
                       shape: RoundedRectangleBorder(
                           borderRadius:
                               BorderRadius.circular(AppSpacing.cardRadius)),
@@ -156,8 +156,8 @@ class ConsentScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(
-            padding: EdgeInsets.only(top: 8.0),
+          Padding(
+            padding: const EdgeInsets.only(top: 8.0),
             child: Icon(Icons.circle, size: 7.0, color: AppColors.terracotta),
           ),
           const SizedBox(width: AppSpacing.sm),

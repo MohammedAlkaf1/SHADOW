@@ -234,15 +234,15 @@ class _LoginWidgetState extends State<LoginWidget> {
                 horizontal: AppSpacing.md, vertical: 14.0),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: AppColors.border),
+              borderSide: BorderSide(color: AppColors.border),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12.0),
-              borderSide: const BorderSide(color: AppColors.terracotta),
+              borderSide: BorderSide(color: AppColors.terracotta),
             ),
           ),
         ),

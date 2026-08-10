@@ -209,7 +209,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                             padding: const EdgeInsets.all(AppSpacing.xl),
                             child: Column(
                               children: [
-                                const Icon(Icons.cloud_upload_rounded,
+                                Icon(Icons.cloud_upload_rounded,
                                     color: AppColors.onNavy, size: 48.0),
                                 const SizedBox(height: AppSpacing.md),
                                 Text('learning.uploadTitle'.tr(),
@@ -245,7 +245,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                           const SizedBox(height: AppSpacing.md),
                           Row(
                             children: [
-                              const Icon(Icons.description_outlined,
+                              Icon(Icons.description_outlined,
                                   size: 18.0, color: AppColors.mutedOnCream),
                               const SizedBox(width: AppSpacing.sm),
                               Expanded(
@@ -268,7 +268,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                             Text('learning.assistant'.tr(),
                                 style: AppText.body(color: AppColors.onCream)),
                             const SizedBox(width: AppSpacing.sm),
-                            const Icon(Icons.auto_awesome_rounded,
+                            Icon(Icons.auto_awesome_rounded,
                                 color: AppColors.terracotta, size: 18.0),
                           ],
                         ),
@@ -284,7 +284,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 children: [
-                                  const SizedBox(
+                                  SizedBox(
                                     width: 20.0,
                                     height: 20.0,
                                     child: CircularProgressIndicator(
@@ -315,7 +315,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                           style: AppText.body(
                                               color: AppColors.onCream)),
                                       const SizedBox(width: AppSpacing.sm),
-                                      const Icon(Icons.auto_awesome_rounded,
+                                      Icon(Icons.auto_awesome_rounded,
                                           color: AppColors.terracotta,
                                           size: 18.0),
                                     ],
@@ -485,9 +485,9 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
   Widget _sliderPanel() {
     final size = FFAppState().readingFontSize.clamp(14.0, 32.0);
     return Container(
-      decoration: const BoxDecoration(
+      decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.only(
+        borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(AppSpacing.lg),
           topRight: Radius.circular(AppSpacing.lg),
         ),
