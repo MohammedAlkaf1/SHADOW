@@ -25,14 +25,16 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
   }
 
   /// Keeps the splash's original ~2s minimum display time, but routes based
-  /// on whether a platform session is already cached: logged in -> hydrate
-  /// the profile (offline-first — getStudentProfile() falls back to cache on
-  /// its own, so this never hangs the splash screen waiting on a dead
-  /// network) and go straight to mode selection; not logged in -> the new
-  /// login screen.
+  /// on whether a platform session can be silently restored: tryRestoreSession
+  /// exchanges a persisted "remember me" refresh token for a fresh access
+  /// token if one is stored (and clears it if the platform rejects it) —
+  /// logged in -> hydrate the profile (offline-first — getStudentProfile()
+  /// falls back to cache on its own, so this never hangs the splash screen
+  /// waiting on a dead network) and go straight to mode selection; not
+  /// logged in -> the login screen.
   Future<void> _decideNextRoute() async {
     final delay = Future.delayed(const Duration(seconds: 2));
-    final loggedIn = await PlatformClient.isLoggedIn;
+    final loggedIn = await PlatformClient.tryRestoreSession();
 
     if (loggedIn) {
       final profileResult = await PlatformClient.getStudentProfile();

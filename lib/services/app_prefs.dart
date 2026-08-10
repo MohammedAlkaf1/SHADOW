@@ -2,14 +2,19 @@
 //
 // Originally: nothing here left the device (quick-contact number, first-run
 // consent flag, transcript retention — no accounts, no backend). As of the
-// platform integration, this also caches the platform session (JWTs), the
-// last successfully-fetched student profile/directives (for offline-first
-// use), and a locally-queued batch of not-yet-sent usage events. This file
-// only ever stores/reads locally — the actual network calls live in
-// platform_client.dart.
+// platform integration, this also caches the last successfully-fetched
+// student profile/directives (for offline-first use) and a locally-queued
+// batch of not-yet-sent usage events. This file only ever stores/reads
+// locally — the actual network calls live in platform_client.dart.
+//
+// The platform session's refresh token ("remember me") is the one thing
+// deliberately NOT kept here — see the secure-storage section below. The
+// access token isn't persisted anywhere at all; PlatformClient holds it
+// in memory for the running app session only.
 
 import 'dart:convert';
 
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AppPrefs {
@@ -18,8 +23,6 @@ class AppPrefs {
   static const _kQuickContact = 'quick_contact_number';
   static const _kRetentionDays = 'transcript_retention_days';
   static const _kAiConsent = 'ai_consent';
-  static const _kAccessToken = 'platform_access_token';
-  static const _kRefreshToken = 'platform_refresh_token';
   static const _kCachedProfileJson = 'platform_cached_profile_json';
   static const _kQueuedEventsJson = 'platform_queued_events_json';
   static const _kAppLanguage = 'app_language';
@@ -115,29 +118,28 @@ class AppPrefs {
     await (await _prefs).remove(_kQuickContact);
   }
 
-  // ── Platform session (JWTs) ─────────────────────────────────────────────
+  // ── Platform session — "remember me" refresh token only ────────────────
+  //
+  // The access token (1h-lived) is never written to disk anywhere — it only
+  // ever lives in PlatformClient's in-memory field for the current app
+  // process. The refresh token (30d-lived) is the one piece of persisted
+  // auth state, and only when the student checked "remember me" at login;
+  // it goes into flutter_secure_storage (Android Keystore / iOS Keychain),
+  // never SharedPreferences, since that's plain-text on disk and this is
+  // long-lived credential material. The password itself is never stored
+  // anywhere, at any point, under any setting.
 
-  static Future<String?> getAccessToken() async =>
-      (await _prefs).getString(_kAccessToken);
+  static const _kRefreshToken = 'platform_refresh_token';
+  static const _secureStorage = FlutterSecureStorage();
 
-  static Future<void> setAccessToken(String token) async =>
-      (await _prefs).setString(_kAccessToken, token);
+  static Future<String?> getRefreshToken() =>
+      _secureStorage.read(key: _kRefreshToken);
 
-  static Future<String?> getRefreshToken() async =>
-      (await _prefs).getString(_kRefreshToken);
+  static Future<void> setRefreshToken(String token) =>
+      _secureStorage.write(key: _kRefreshToken, value: token);
 
-  static Future<void> setRefreshToken(String token) async =>
-      (await _prefs).setString(_kRefreshToken, token);
-
-  /// Clears the platform session (logout) — does NOT clear the cached
-  /// profile/directives or queued events, so the app keeps working
-  /// offline-first with the last-known-good state until the student logs
-  /// back in.
-  static Future<void> clearSession() async {
-    final prefs = await _prefs;
-    await prefs.remove(_kAccessToken);
-    await prefs.remove(_kRefreshToken);
-  }
+  static Future<void> clearRefreshToken() =>
+      _secureStorage.delete(key: _kRefreshToken);
 
   // ── Cached platform profile (offline-first) ─────────────────────────────
 

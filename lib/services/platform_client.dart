@@ -79,12 +79,27 @@ class PlatformClient {
   static final List<Map<String, dynamic>> _memoryQueue = [];
   static bool _memoryQueueLoaded = false;
 
+  // In-memory only — never written to disk. Lives for as long as the app
+  // process does; a fresh cold start always begins with this null, and (if
+  // "remember me" was on) tryRestoreSession() repopulates it from the
+  // persisted refresh token before the student ever sees a login screen.
+  static String? _accessToken;
+
   // ── Auth ─────────────────────────────────────────────────────────────
 
   static Uri _uri(String path) => Uri.parse('$kPlatformBaseUrl$path');
 
+  /// [rememberMe]: if true, the platform's refresh token (30-day-lived) is
+  /// persisted to secure storage so [tryRestoreSession] can silently renew
+  /// the session on the next cold start. If false, nothing survives this
+  /// app process — and any refresh token remembered by a previous login is
+  /// explicitly cleared, since this login is a deliberate "don't remember
+  /// me" choice. The password itself is never persisted either way.
   static Future<PlatformResult<void>> login(
-      String email, String password) async {
+    String email,
+    String password, {
+    required bool rememberMe,
+  }) async {
     try {
       final response = await http
           .post(
@@ -101,8 +116,12 @@ class PlatformClient {
 
       final body = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
-      await AppPrefs.setAccessToken(body['accessToken'] as String);
-      await AppPrefs.setRefreshToken(body['refreshToken'] as String);
+      _accessToken = body['accessToken'] as String;
+      if (rememberMe) {
+        await AppPrefs.setRefreshToken(body['refreshToken'] as String);
+      } else {
+        await AppPrefs.clearRefreshToken();
+      }
       return const PlatformResult.success(null);
     } catch (e) {
       debugPrint('⚠️ PlatformClient.login failed: $e');
@@ -111,6 +130,10 @@ class PlatformClient {
     }
   }
 
+  /// Exchanges the persisted refresh token (if any) for a new access token.
+  /// The platform's /auth/refresh does not rotate the refresh token itself
+  /// (it only returns a new accessToken), so the stored refresh token is
+  /// left as-is on success.
   static Future<bool> refreshToken() async {
     final refresh = await AppPrefs.getRefreshToken();
     if (refresh == null) return false;
@@ -125,7 +148,7 @@ class PlatformClient {
       if (response.statusCode != 200) return false;
       final body = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
-      await AppPrefs.setAccessToken(body['accessToken'] as String);
+      _accessToken = body['accessToken'] as String;
       return true;
     } catch (e) {
       debugPrint('⚠️ PlatformClient.refreshToken failed: $e');
@@ -133,11 +156,28 @@ class PlatformClient {
     }
   }
 
-  static Future<bool> get isLoggedIn async =>
-      (await AppPrefs.getAccessToken()) != null;
+  /// Called once on app startup (splash screen), before ever showing the
+  /// login screen. Silently renews the session from the persisted "remember
+  /// me" refresh token, if one exists. Returns false (and clears the stale
+  /// refresh token) if none is stored, or if the stored one is rejected —
+  /// either way the caller then shows a normal login screen.
+  static Future<bool> tryRestoreSession() async {
+    if (_accessToken != null) return true;
+    final restored = await refreshToken();
+    if (!restored) await AppPrefs.clearRefreshToken();
+    return restored;
+  }
 
+  /// Whether this running app process currently holds an access token —
+  /// true immediately after [login] or a successful [tryRestoreSession],
+  /// false at the start of every fresh process until one of those runs.
+  static Future<bool> get isLoggedIn async => _accessToken != null;
+
+  /// Clears both the in-memory access token and the persisted refresh
+  /// token, regardless of whether "remember me" was ever used.
   static Future<void> logout() async {
-    await AppPrefs.clearSession();
+    _accessToken = null;
+    await AppPrefs.clearRefreshToken();
     _flushTimer?.cancel();
     _flushTimer = null;
   }
@@ -215,7 +255,7 @@ class PlatformClient {
     await _ensureQueueLoaded();
     if (_memoryQueue.isEmpty) return;
 
-    final token = await AppPrefs.getAccessToken();
+    final token = _accessToken;
     if (token == null) return; // not logged in — nothing to flush against
 
     final batch = List<Map<String, dynamic>>.from(_memoryQueue);
@@ -266,7 +306,7 @@ class PlatformClient {
   /// token refresh on 401. Returns null on any failure (network error,
   /// non-200 after retry, etc.) — callers fall back to cache.
   static Future<Map<String, dynamic>?> _authedGet(String path) async {
-    final token = await AppPrefs.getAccessToken();
+    final token = _accessToken;
     if (token == null) return null;
 
     try {
@@ -278,10 +318,9 @@ class PlatformClient {
       if (response.statusCode == 401) {
         final refreshed = await refreshToken();
         if (!refreshed) return null;
-        final newToken = await AppPrefs.getAccessToken();
         response = await http.get(
           _uri(path),
-          headers: {'Authorization': 'Bearer $newToken'},
+          headers: {'Authorization': 'Bearer $_accessToken'},
         ).timeout(const Duration(seconds: 15));
       }
 

@@ -99,6 +99,10 @@ dependencies:
   # code-generation step, matching this project's existing "no new build
   # tooling" constraint (AGENTS.md).
   easy_localization: ^3.0.7
+  # Encrypted-at-rest storage (Android Keystore / iOS Keychain) for the
+  # "remember me" refresh token — deliberately not SharedPreferences, since
+  # that's plain-text and this is long-lived (30-day) authentication data.
+  flutter_secure_storage: ^10.3.1
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.

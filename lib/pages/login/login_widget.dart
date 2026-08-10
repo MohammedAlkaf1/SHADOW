@@ -33,6 +33,7 @@ class _LoginWidgetState extends State<LoginWidget> {
   final _passwordController = TextEditingController();
   bool _loading = false;
   String? _error;
+  bool _rememberMe = true;
 
   @override
   void dispose() {
@@ -54,7 +55,11 @@ class _LoginWidgetState extends State<LoginWidget> {
       _error = null;
     });
 
-    final loginResult = await PlatformClient.login(email, password);
+    final loginResult = await PlatformClient.login(
+      email,
+      password,
+      rememberMe: _rememberMe,
+    );
     if (!mounted) return;
 
     if (!loginResult.isSuccess) {
@@ -137,6 +142,29 @@ class _LoginWidgetState extends State<LoginWidget> {
                     label: 'كلمة المرور',
                     controller: _passwordController,
                     obscureText: true,
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                  a11yButton(
+                    label: 'تذكرني',
+                    child: InkWell(
+                      onTap: () =>
+                          setState(() => _rememberMe = !_rememberMe),
+                      child: Padding(
+                        padding:
+                            const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                        child: Row(
+                          children: [
+                            Checkbox(
+                              value: _rememberMe,
+                              activeColor: AppColors.terracotta,
+                              onChanged: (value) =>
+                                  setState(() => _rememberMe = value ?? true),
+                            ),
+                            Text('تذكرني', style: AppText.body()),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                   if (_error != null) ...[
                     const SizedBox(height: AppSpacing.md),
