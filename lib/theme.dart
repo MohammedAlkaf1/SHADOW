@@ -63,11 +63,32 @@ class AppText {
     required double height,
     required Color color,
   }) =>
+      custom(
+        fontSize: fontSize,
+        fontWeight: fontWeight,
+        height: height,
+        color: color,
+      );
+
+  /// For call sites that need a size/weight/height AppText's fixed presets
+  /// don't cover — an adjustable reading-font-size slider, a one-off display
+  /// glyph, etc. Screens used to reach for `GoogleFonts.tajawal(...)`
+  /// directly for these, which skipped the `leadingDistribution: .even` fix
+  /// below and brought back the clipped-ascender/descender bug on ش/ت/لا.
+  /// Always route custom Tajawal styles through here instead.
+  static TextStyle custom({
+    required double fontSize,
+    FontWeight fontWeight = FontWeight.w400,
+    double height = 1.5,
+    required Color color,
+    double? letterSpacing,
+  }) =>
       GoogleFonts.tajawal(
         fontSize: fontSize,
         fontWeight: fontWeight,
         height: height,
         color: color,
+        letterSpacing: letterSpacing,
       ).copyWith(leadingDistribution: TextLeadingDistribution.even);
 
   static TextStyle display({Color color = AppColors.onCream}) => _tajawal(

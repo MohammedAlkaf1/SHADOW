@@ -5,7 +5,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '/a11y.dart';
 import '/theme.dart';
@@ -133,7 +132,7 @@ class _SavedTranscriptsPageState extends State<SavedTranscriptsPage> {
                   child: SelectableText(
                     t.text,
                     textAlign: TextAlign.end,
-                    style: GoogleFonts.tajawal(
+                    style: AppText.custom(
                         fontSize: 18.0,
                         height: 1.7,
                         color: AppColors.onCream),

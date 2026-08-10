@@ -10,7 +10,6 @@ import '/index.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'welcome_selection_model.dart';
 export 'welcome_selection_model.dart';
@@ -166,11 +165,11 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
           alignment: Alignment.center,
           child: Text(
             'ش',
-            style: GoogleFonts.tajawal(
+            style: AppText.custom(
               fontSize: 28.0,
               fontWeight: FontWeight.w900,
               color: AppColors.terracotta,
-              height: 1.0,
+              height: 1.3,
             ),
           ),
         ),

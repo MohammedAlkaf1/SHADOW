@@ -6,7 +6,6 @@ import '/services/platform_client.dart';
 import '/student/student_profile_provider.dart';
 import '/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class SplashScreenWidget extends StatefulWidget {
   const SplashScreenWidget({super.key});
@@ -72,29 +71,29 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
               alignment: Alignment.center,
               child: Text(
                 'ش',
-                style: GoogleFonts.tajawal(
+                style: AppText.custom(
                   fontSize: 52.0,
                   fontWeight: FontWeight.w900,
                   color: AppColors.terracotta,
-                  height: 1.0,
+                  height: 1.3,
                 ),
               ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(
               'شادو',
-              style: GoogleFonts.tajawal(
+              style: AppText.custom(
                 fontSize: 44.0,
                 fontWeight: FontWeight.w900,
                 color: AppColors.onNavy,
                 letterSpacing: 1.0,
-                height: 1.2,
+                height: 1.3,
               ),
             ),
             const SizedBox(height: 4.0),
             Text(
               'Shadow',
-              style: GoogleFonts.tajawal(
+              style: AppText.custom(
                 fontSize: 20.0,
                 fontWeight: FontWeight.w600,
                 color: AppColors.terracotta,
@@ -105,7 +104,7 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
             const SizedBox(height: 14.0),
             Text(
               'مرافقك الأكاديمي الذكي',
-              style: GoogleFonts.tajawal(
+              style: AppText.custom(
                 fontSize: 17.0,
                 fontWeight: FontWeight.w500,
                 color: AppColors.mutedOnNavy,

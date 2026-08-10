@@ -15,7 +15,6 @@ import '/custom_code/actions/index.dart' as actions;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'learning_support_mode_model.dart';
 export 'learning_support_mode_model.dart';
@@ -322,7 +321,7 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
                                   a11yLive(Text(
                                     _model.aiResult!,
                                     textAlign: TextAlign.start,
-                                    style: GoogleFonts.tajawal(
+                                    style: AppText.custom(
                                       color: AppColors.onCream,
                                       fontSize:
                                           FFAppState().readingFontSize < 18.0

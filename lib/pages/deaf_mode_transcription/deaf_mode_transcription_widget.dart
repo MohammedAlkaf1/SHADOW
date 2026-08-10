@@ -24,7 +24,6 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'deaf_mode_transcription_model.dart';
@@ -309,7 +308,7 @@ class _DeafModeTranscriptionWidgetState
   /// Arabic words") would misflag ordinary vocabulary. Scope decision, not
   /// an oversight.
   Widget _buildTranscriptText() {
-    final style = GoogleFonts.tajawal(
+    final style = AppText.custom(
       color: AppColors.onCream,
       fontSize: FFAppState().readingFontSize < _levelDefaultFontSize
           ? _levelDefaultFontSize
