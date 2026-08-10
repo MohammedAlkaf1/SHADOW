@@ -9,8 +9,11 @@ import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '/a11y.dart';
+import '/flutter_flow/flutter_flow_util.dart';
+import '/index.dart';
 import '/main.dart' show kSupportedLocales;
 import '/services/app_prefs.dart';
+import '/services/platform_client.dart';
 import '/theme.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -24,6 +27,16 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  bool _loggedIn = false;
+
+  @override
+  void initState() {
+    super.initState();
+    PlatformClient.isLoggedIn.then((value) {
+      if (mounted) setState(() => _loggedIn = value);
+    });
+  }
+
   Future<void> _selectLanguage(String languageCode) async {
     if (context.locale.languageCode == languageCode) return;
     // Keep the two sources in sync: easy_localization drives the UI
@@ -31,6 +44,49 @@ class _SettingsScreenState extends State<SettingsScreen> {
     await context.setLocale(Locale(languageCode));
     await AppPrefs.setAppLanguage(languageCode);
     if (mounted) setState(() {});
+  }
+
+  /// The only way to end a platform session from inside the app — without
+  /// this, a token stored by a previous login (this device, an earlier
+  /// build) has no way to be cleared short of uninstalling, so the splash
+  /// screen's "already logged in" check keeps skipping straight past the
+  /// login screen indefinitely.
+  Future<void> _confirmSignOut() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppSpacing.cardRadius)),
+        title: Text('settings.signOutConfirmTitle'.tr(),
+            textAlign: TextAlign.start, style: AppText.title()),
+        content: Text('settings.signOutConfirmBody'.tr(),
+            textAlign: TextAlign.start, style: AppText.body()),
+        actionsAlignment: MainAxisAlignment.spaceBetween,
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text('common.cancel'.tr(),
+                style: AppText.button(color: AppColors.navy)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.terracotta,
+              foregroundColor: AppColors.onNavy,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12.0)),
+            ),
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text('settings.signOutAction'.tr(),
+                style: AppText.button(color: AppColors.onNavy)),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await PlatformClient.logout();
+    if (!mounted) return;
+    context.go(LoginWidget.routePath);
   }
 
   @override
@@ -82,6 +138,27 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ],
             ),
           ),
+          if (_loggedIn) ...[
+            const SizedBox(height: AppSpacing.lg),
+            Text('settings.account'.tr(),
+                textAlign: TextAlign.start,
+                style: AppText.cardTitle(color: AppColors.onCream)),
+            const SizedBox(height: AppSpacing.md),
+            Container(
+              decoration: AppDecor.creamCard(),
+              child: a11yButton(
+                label: 'settings.signOut'.tr(),
+                child: ListTile(
+                  title: Text('settings.signOut'.tr(),
+                      textAlign: TextAlign.start,
+                      style: AppText.body(color: AppColors.terracotta)),
+                  trailing:
+                      const Icon(Icons.logout_rounded, color: AppColors.terracotta),
+                  onTap: _confirmSignOut,
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );

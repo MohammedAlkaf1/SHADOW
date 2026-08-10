@@ -34,7 +34,12 @@
     "language": "App language",
     "languageHint": "Applies immediately — changes the interface language, the Deepgram transcription language, and the AI prompt language together",
     "languageArabic": "العربية",
-    "languageEnglish": "English"
+    "languageEnglish": "English",
+    "account": "Account",
+    "signOut": "Sign Out",
+    "signOutConfirmTitle": "Sign Out",
+    "signOutConfirmBody": "You'll be signed out of your Shadow platform account on this device. You can sign in again at any time.",
+    "signOutAction": "Sign Out"
   },
   "common": {
     "back": "Back",

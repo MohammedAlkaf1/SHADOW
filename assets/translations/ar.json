@@ -34,7 +34,12 @@
     "language": "لغة التطبيق",
     "languageHint": "تُطبَّق فوراً — تغيّر لغة الواجهة، ولغة تفريغ Deepgram، ولغة برومبتات الذكاء الاصطناعي معاً",
     "languageArabic": "العربية",
-    "languageEnglish": "English"
+    "languageEnglish": "English",
+    "account": "الحساب",
+    "signOut": "تسجيل الخروج",
+    "signOutConfirmTitle": "تسجيل الخروج",
+    "signOutConfirmBody": "سيتم تسجيل خروجك من حساب منصة شادو على هذا الجهاز. يمكنك تسجيل الدخول مرة أخرى في أي وقت.",
+    "signOutAction": "تسجيل الخروج"
   },
   "common": {
     "back": "رجوع",
