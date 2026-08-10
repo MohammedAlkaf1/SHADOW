@@ -310,14 +310,17 @@ class _PhysicalAssistanceModeWidgetState
           ),
         ),
       ),
-      body: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Header
-          Container(
-            color: AppColors.cream,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      // Custom header (not a real AppBar) — without SafeArea it renders
+      // under the status bar, clipping the top of the page title.
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // Header
+            Container(
+              color: AppColors.cream,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Padding(
                   padding: const EdgeInsetsDirectional.fromSTEB(
@@ -499,6 +502,7 @@ class _PhysicalAssistanceModeWidgetState
               ),
             ),
           ],
+          ),
         ),
       );
   }

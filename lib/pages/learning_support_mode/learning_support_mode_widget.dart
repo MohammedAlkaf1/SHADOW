@@ -187,10 +187,13 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: AppColors.cream,
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            _header('learning.title'.tr(), Icons.psychology_rounded),
+        // Custom header (not a real AppBar) — without SafeArea it renders
+        // under the status bar, clipping the top of the page title.
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _header('learning.title'.tr(), Icons.psychology_rounded),
               Expanded(
                 child: SingleChildScrollView(
                   primary: false,
@@ -370,9 +373,10 @@ class _LearningSupportModeWidgetState extends State<LearningSupportModeWidget> {
             // Font-size slider panel (single label — no duplicate)
             _sliderPanel(),
           ],
+          ),
+          ),
         ),
-      ),
-    );
+      );
   }
 
   /// All three buttons normally. Neurodevelopmental / mild cognitive support

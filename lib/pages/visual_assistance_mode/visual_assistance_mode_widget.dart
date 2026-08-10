@@ -133,10 +133,13 @@ class _VisualAssistanceModeWidgetState
       child: Scaffold(
         key: scaffoldKey,
         backgroundColor: AppColors.cream,
-        body: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            // Header
+        // Custom header (not a real AppBar) — without SafeArea it renders
+        // under the status bar, clipping the top of the page title.
+        body: SafeArea(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
             Container(
               color: AppColors.cream,
               child: Column(
@@ -291,6 +294,7 @@ class _VisualAssistanceModeWidgetState
                 ),
               ),
             ],
+          ),
           ),
         ),
       );
