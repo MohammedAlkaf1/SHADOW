@@ -14,6 +14,7 @@
 
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -132,14 +133,45 @@ class AppPrefs {
   static const _kRefreshToken = 'platform_refresh_token';
   static const _secureStorage = FlutterSecureStorage();
 
-  static Future<String?> getRefreshToken() =>
-      _secureStorage.read(key: _kRefreshToken);
+  // Wrapped in try/catch (unlike every other AppPrefs method) because a
+  // native-side secure-storage failure — a corrupted Keystore entry, a
+  // plugin registration problem — throws a PlatformException rather than
+  // just returning null, and an uncaught throw here would abort
+  // PlatformClient.tryRestoreSession() silently: the splash screen's
+  // `await` would never resolve, and "remember me" would look like it's
+  // just not working with nothing in the console to explain why. These
+  // debugPrints are the actual way to tell, on a real device, whether the
+  // problem is "no token was ever written", "a token exists but reading it
+  // failed", or something downstream of both.
 
-  static Future<void> setRefreshToken(String token) =>
-      _secureStorage.write(key: _kRefreshToken, value: token);
+  static Future<String?> getRefreshToken() async {
+    try {
+      final value = await _secureStorage.read(key: _kRefreshToken);
+      debugPrint(
+          '🔐 AppPrefs.getRefreshToken: ${value == null ? "none stored" : "found (${value.length} chars)"}');
+      return value;
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.getRefreshToken failed: $e');
+      return null;
+    }
+  }
 
-  static Future<void> clearRefreshToken() =>
-      _secureStorage.delete(key: _kRefreshToken);
+  static Future<void> setRefreshToken(String token) async {
+    try {
+      await _secureStorage.write(key: _kRefreshToken, value: token);
+      debugPrint('🔐 AppPrefs.setRefreshToken: saved (${token.length} chars)');
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.setRefreshToken failed: $e');
+    }
+  }
+
+  static Future<void> clearRefreshToken() async {
+    try {
+      await _secureStorage.delete(key: _kRefreshToken);
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.clearRefreshToken failed: $e');
+    }
+  }
 
   // ── Cached platform profile (offline-first) ─────────────────────────────
 

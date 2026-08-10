@@ -85,6 +85,20 @@ class PlatformClient {
   // persisted refresh token before the student ever sees a login screen.
   static String? _accessToken;
 
+  /// Test-only: this static field otherwise persists across every test in
+  /// the same run (Dart tests share one isolate), silently short-circuiting
+  /// tryRestoreSession()'s "is there already an in-memory token" check for
+  /// any test after the first one that logs in. Call from setUp() to get a
+  /// genuinely fresh-process state.
+  @visibleForTesting
+  static void resetForTesting() {
+    _accessToken = null;
+    _flushTimer?.cancel();
+    _flushTimer = null;
+    _memoryQueue.clear();
+    _memoryQueueLoaded = false;
+  }
+
   // ── Auth ─────────────────────────────────────────────────────────────
 
   static Uri _uri(String path) => Uri.parse('$kPlatformBaseUrl$path');
@@ -117,8 +131,17 @@ class PlatformClient {
       final body = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
       _accessToken = body['accessToken'] as String;
+      debugPrint('🔐 PlatformClient.login: succeeded, rememberMe=$rememberMe');
       if (rememberMe) {
-        await AppPrefs.setRefreshToken(body['refreshToken'] as String);
+        final refreshToken = body['refreshToken'];
+        if (refreshToken is String) {
+          await AppPrefs.setRefreshToken(refreshToken);
+        } else {
+          debugPrint(
+              '⚠️ PlatformClient.login: rememberMe was on but the response '
+              'had no refreshToken (key present: ${body.containsKey('refreshToken')}, '
+              'value: $refreshToken) — nothing will be restorable on next launch.');
+        }
       } else {
         await AppPrefs.clearRefreshToken();
       }
@@ -136,7 +159,10 @@ class PlatformClient {
   /// left as-is on success.
   static Future<bool> refreshToken() async {
     final refresh = await AppPrefs.getRefreshToken();
-    if (refresh == null) return false;
+    if (refresh == null) {
+      debugPrint('🔐 PlatformClient.refreshToken: no stored refresh token');
+      return false;
+    }
     try {
       final response = await http
           .post(
@@ -145,10 +171,16 @@ class PlatformClient {
             body: jsonEncode({'refreshToken': refresh}),
           )
           .timeout(const Duration(seconds: 15));
-      if (response.statusCode != 200) return false;
+      if (response.statusCode != 200) {
+        debugPrint(
+            '⚠️ PlatformClient.refreshToken: platform rejected the stored '
+            'refresh token — status ${response.statusCode}');
+        return false;
+      }
       final body = jsonDecode(utf8.decode(response.bodyBytes))
           as Map<String, dynamic>;
       _accessToken = body['accessToken'] as String;
+      debugPrint('🔐 PlatformClient.refreshToken: succeeded');
       return true;
     } catch (e) {
       debugPrint('⚠️ PlatformClient.refreshToken failed: $e');
@@ -162,9 +194,14 @@ class PlatformClient {
   /// refresh token) if none is stored, or if the stored one is rejected —
   /// either way the caller then shows a normal login screen.
   static Future<bool> tryRestoreSession() async {
-    if (_accessToken != null) return true;
+    if (_accessToken != null) {
+      debugPrint('🔐 PlatformClient.tryRestoreSession: already have a '
+          'session in memory');
+      return true;
+    }
     final restored = await refreshToken();
     if (!restored) await AppPrefs.clearRefreshToken();
+    debugPrint('🔐 PlatformClient.tryRestoreSession: restored=$restored');
     return restored;
   }
 

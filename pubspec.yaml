@@ -127,6 +127,7 @@ dev_dependencies:
   # Generates the Android launcher icons (legacy mipmaps + adaptive icon) from
   # the Shadow "ش" brand mark. Run once with: dart run flutter_launcher_icons
   flutter_launcher_icons: ^0.14.1
+  flutter_secure_storage_platform_interface: ^2.0.3
 
 # Launcher-icon generation. Source PNGs live in assets/icon/ and are produced by
 # tool/icon_gen/icon_gen_test.dart (navy field + terracotta ش, matching splash).
