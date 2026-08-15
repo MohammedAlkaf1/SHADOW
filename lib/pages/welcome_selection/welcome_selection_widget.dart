@@ -14,6 +14,36 @@ import 'package:provider/provider.dart';
 import 'welcome_selection_model.dart';
 export 'welcome_selection_model.dart';
 
+// Visual-only constants for this screen's redesign — deliberately local
+// (not added to AppSpacing/theme.dart) so this pass touches only this file,
+// per the request to leave every other screen untouched. Larger than the
+// shared AppSpacing values on purpose, for the requested "more whitespace,
+// clearer hierarchy" feel.
+const double _kSectionGap = 36.0;
+const double _kLabelToGridGap = 22.0;
+const double _kCardGap = 18.0;
+const double _kCardRadius = 24.0;
+
+/// Soft, theme-aware card shadow. Both layers key off [AppColors.brightness]
+/// (already the single source of truth main.dart keeps in sync with
+/// ThemeMode) rather than a fixed color, so dark mode gets a visibly deeper
+/// shadow instead of an invisible black-on-black one.
+List<BoxShadow> _softShadow({double strength = 1.0}) {
+  final dark = AppColors.brightness == Brightness.dark;
+  return [
+    BoxShadow(
+      color: Colors.black.withValues(alpha: (dark ? 0.45 : 0.10) * strength),
+      blurRadius: 24.0 * strength,
+      offset: Offset(0, 10.0 * strength),
+    ),
+    BoxShadow(
+      color: Colors.black.withValues(alpha: (dark ? 0.25 : 0.05) * strength),
+      blurRadius: 6.0 * strength,
+      offset: Offset(0, 2.0 * strength),
+    ),
+  ];
+}
+
 class WelcomeSelectionWidget extends StatefulWidget {
   const WelcomeSelectionWidget({super.key});
 
@@ -68,13 +98,13 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _header(),
-              const SizedBox(height: AppSpacing.xl),
+              const SizedBox(height: _kSectionGap),
               Text(
                 'home.chooseSupport'.tr(),
                 textAlign: TextAlign.start,
                 style: AppText.label(),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: _kLabelToGridGap),
               Expanded(
                 child: Column(
                   children: [
@@ -93,7 +123,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                                   )
                                 : const SizedBox.shrink(),
                           ),
-                          const SizedBox(width: AppSpacing.md),
+                          const SizedBox(width: _kCardGap),
                           Expanded(
                             child: _isModeEnabled(profile, 'VISUAL_MODE')
                                 ? _modeCard(
@@ -108,7 +138,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                         ],
                       ),
                     ),
-                    const SizedBox(height: AppSpacing.md),
+                    const SizedBox(height: _kCardGap),
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -124,7 +154,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                                   )
                                 : const SizedBox.shrink(),
                           ),
-                          const SizedBox(width: AppSpacing.md),
+                          const SizedBox(width: _kCardGap),
                           Expanded(
                             child: _isModeEnabled(profile, 'PHYSICAL_MODE')
                                 ? _modeCard(
@@ -142,7 +172,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
                   ],
                 ),
               ),
-              const SizedBox(height: AppSpacing.md),
+              const SizedBox(height: AppSpacing.lg),
               _footer(),
             ],
           ),
@@ -154,13 +184,20 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
   Widget _header() {
     return Row(
       children: [
-        // Brand mark — the single terracotta accent on this screen.
+        // Brand mark — the single terracotta accent on this screen. A subtle
+        // diagonal gradient (navy -> navyDark, both already brightness-aware)
+        // plus a soft shadow give it depth instead of a flat fill.
         Container(
-          width: 52.0,
-          height: 52.0,
+          width: 56.0,
+          height: 56.0,
           decoration: BoxDecoration(
-            color: AppColors.navy,
-            borderRadius: BorderRadius.circular(14.0),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.navy, AppColors.navyDark],
+            ),
+            borderRadius: BorderRadius.circular(16.0),
+            boxShadow: _softShadow(strength: 0.7),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -186,10 +223,17 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
         ),
         a11yButton(
           label: 'home.settings'.tr(),
-          child: IconButton(
-            icon: Icon(Icons.settings_rounded,
-                color: AppColors.mutedOnCream),
-            onPressed: () => context.pushNamed(SettingsScreen.routeName),
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppColors.surface,
+              shape: BoxShape.circle,
+              boxShadow: _softShadow(strength: 0.4),
+            ),
+            child: IconButton(
+              icon: Icon(Icons.settings_rounded,
+                  color: AppColors.mutedOnCream),
+              onPressed: () => context.pushNamed(SettingsScreen.routeName),
+            ),
           ),
         ),
       ],
@@ -212,49 +256,11 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
     required String route,
   }) {
     return a11yButton(
-      child: Material(
-        color: AppColors.navy,
-        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-        clipBehavior: Clip.antiAlias,
-        child: InkWell(
-          onTap: () => context.pushNamed(route),
-          child: Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 56.0,
-                  height: 56.0,
-                  decoration: BoxDecoration(
-                    color: AppColors.surface,
-                    shape: BoxShape.circle,
-                  ),
-                  alignment: Alignment.center,
-                  child: Icon(icon, size: 28.0, color: AppColors.navy),
-                ),
-                const SizedBox(height: AppSpacing.md),
-                Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppText.cardTitle(),
-                ),
-                const SizedBox(height: AppSpacing.xs),
-                Flexible(
-                  child: Text(
-                    desc,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppText.label(color: AppColors.mutedOnNavy),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: _ModeCard(
+        icon: icon,
+        title: title,
+        desc: desc,
+        onTap: () => context.pushNamed(route),
       ),
     );
   }
@@ -292,6 +298,140 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
           ),
         ],
       ],
+    );
+  }
+}
+
+/// A mode-selection card: soft-shadowed, subtly gradient-filled, with a
+/// large low-opacity "ghost" copy of its own icon watermarked in the corner
+/// (a lightweight duotone-style effect that needs no new icon assets) and a
+/// gentle scale/fade on press. Purely presentational — [onTap] is the exact
+/// same route-push the plain card used to call directly, and every
+/// interactive/announced element is still whatever [a11yButton] wraps this
+/// in at the call site.
+class _ModeCard extends StatefulWidget {
+  const _ModeCard({
+    required this.icon,
+    required this.title,
+    required this.desc,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String desc;
+  final VoidCallback onTap;
+
+  @override
+  State<_ModeCard> createState() => _ModeCardState();
+}
+
+class _ModeCardState extends State<_ModeCard> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed != value) setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedScale(
+      scale: _pressed ? 0.97 : 1.0,
+      duration: const Duration(milliseconds: 120),
+      curve: Curves.easeOut,
+      child: AnimatedOpacity(
+        opacity: _pressed ? 0.92 : 1.0,
+        duration: const Duration(milliseconds: 120),
+        child: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.navy, AppColors.navyDark],
+            ),
+            borderRadius: BorderRadius.circular(_kCardRadius),
+            boxShadow: _softShadow(),
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(_kCardRadius),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: widget.onTap,
+              onHighlightChanged: _setPressed,
+              child: Stack(
+                children: [
+                  // Faux-duotone watermark: a large, near-invisible copy of
+                  // the same icon peeking from the corner. Decorative only —
+                  // excluded from the semantics tree so TalkBack never
+                  // announces a second, unlabelled icon.
+                  Positioned(
+                    right: -14.0,
+                    bottom: -14.0,
+                    child: ExcludeSemantics(
+                      child: Icon(
+                        widget.icon,
+                        size: 108.0,
+                        color: AppColors.onNavy.withValues(alpha: 0.06),
+                      ),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 64.0,
+                          height: 64.0,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                AppColors.surface,
+                                Color.lerp(
+                                    AppColors.surface, AppColors.navy, 0.06)!,
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                            boxShadow: _softShadow(strength: 0.5),
+                          ),
+                          alignment: Alignment.center,
+                          // onCream (not navy) so the icon still reads
+                          // clearly against this circle in dark mode, where
+                          // navy and surface are both very dark and would
+                          // otherwise sit almost on top of each other.
+                          child: Icon(widget.icon,
+                              size: 30.0, color: AppColors.onCream),
+                        ),
+                        const SizedBox(height: AppSpacing.md),
+                        Text(
+                          widget.title,
+                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppText.cardTitle(),
+                        ),
+                        const SizedBox(height: AppSpacing.xs),
+                        Flexible(
+                          child: Text(
+                            widget.desc,
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.label(color: AppColors.mutedOnNavy),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
