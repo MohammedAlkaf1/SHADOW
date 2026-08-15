@@ -62,24 +62,10 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Container(
+            Image.asset(
+              'assets/icon/app_icon.png',
               width: 100.0,
               height: 100.0,
-              decoration: BoxDecoration(
-                color: AppColors.onNavy.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(28.0),
-                border: Border.all(color: AppColors.terracotta, width: 2.0),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'ش',
-                style: AppText.custom(
-                  fontSize: 52.0,
-                  fontWeight: FontWeight.w900,
-                  color: AppColors.terracotta,
-                  height: 1.3,
-                ),
-              ),
             ),
             const SizedBox(height: AppSpacing.lg),
             Text(

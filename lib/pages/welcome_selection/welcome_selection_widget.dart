@@ -202,31 +202,18 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
   Widget _header() {
     return Row(
       children: [
-        // Brand mark — the single terracotta accent on this screen. The
-        // navy gradient here is the reference the four mode cards below
-        // match exactly.
+        // Brand mark — the designed Shadow logo (assets/icon/app_icon.png,
+        // the same source used to generate the launcher icon). It already
+        // carries its own navy gradient + rounded corners, so this
+        // Container only adds the shadow.
         Container(
           width: 56.0,
           height: 56.0,
           decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: _kNavyGradient,
-            ),
             borderRadius: BorderRadius.circular(16.0),
             boxShadow: _smallShadow(),
           ),
-          alignment: Alignment.center,
-          child: Text(
-            'ش',
-            style: AppText.custom(
-              fontSize: 28.0,
-              fontWeight: FontWeight.w900,
-              color: AppColors.terracotta,
-              height: 1.3,
-            ),
-          ),
+          child: Image.asset('assets/icon/app_icon.png'),
         ),
         const SizedBox(width: AppSpacing.md),
         Expanded(

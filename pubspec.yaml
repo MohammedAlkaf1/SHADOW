@@ -124,20 +124,21 @@ dev_dependencies:
   # Dev/test only (does not ship in the app): lets sqflite run on the desktop VM
   # so transcript-store logic can be unit-tested without a device.
   sqflite_common_ffi: ^2.3.3
-  # Generates the Android launcher icons (legacy mipmaps + adaptive icon) from
-  # the Shadow "ش" brand mark. Run once with: dart run flutter_launcher_icons
+  # Generates the Android launcher icons (legacy mipmaps + adaptive icon)
+  # from the Shadow brand mark. Run once with: dart run flutter_launcher_icons
   flutter_launcher_icons: ^0.14.1
   flutter_secure_storage_platform_interface: ^2.0.3
 
-# Launcher-icon generation. Source PNGs live in assets/icon/ and are produced by
-# tool/icon_gen/icon_gen_test.dart (navy field + terracotta ش, matching splash).
+# Launcher-icon generation. Source: assets/icon/app_icon.png (the designed
+# master icon — navy gradient field + terracotta/cream mark), replacing the
+# earlier programmatically-generated "ش" glyph icon.
 flutter_launcher_icons:
-  android: "ic_launcher"
+  android: true
   ios: false
-  image_path: "assets/icon/ic_launcher.png"
-  min_sdk_android: 21
+  image_path: "assets/icon/app_icon.png"
   adaptive_icon_background: "#1E2A3A"
-  adaptive_icon_foreground: "assets/icon/ic_launcher_foreground.png"
+  adaptive_icon_foreground: "assets/icon/app_icon.png"
+  min_sdk_android: 21
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -160,6 +161,7 @@ flutter:
     - assets/pdfs/
     - assets/jsons/
     - assets/translations/
+    - assets/icon/app_icon.png
 
 
 

@@ -104,19 +104,10 @@ class _LoginWidgetState extends State<LoginWidget> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Center(
-                    child: Container(
+                    child: Image.asset(
+                      'assets/icon/app_icon.png',
                       width: 72.0,
                       height: 72.0,
-                      decoration: BoxDecoration(
-                        color: AppColors.navy,
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
-                      alignment: Alignment.center,
-                      child: Text(
-                        'ش',
-                        style: AppText.display(color: AppColors.terracotta)
-                            .copyWith(fontSize: 36.0),
-                      ),
                     ),
                   ),
                   const SizedBox(height: AppSpacing.lg),
