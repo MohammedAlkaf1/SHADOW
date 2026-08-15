@@ -24,22 +24,40 @@ const double _kLabelToGridGap = 22.0;
 const double _kCardGap = 18.0;
 const double _kCardRadius = 24.0;
 
-/// Soft, theme-aware card shadow. Both layers key off [AppColors.brightness]
-/// (already the single source of truth main.dart keeps in sync with
-/// ThemeMode) rather than a fixed color, so dark mode gets a visibly deeper
-/// shadow instead of an invisible black-on-black one.
-List<BoxShadow> _softShadow({double strength = 1.0}) {
+/// The one navy gradient used everywhere on this screen that needs depth
+/// (the "ش" brand mark and all four mode cards) — a visibly lighter navy on
+/// top settling into a visibly darker one at the bottom. Fixed hex values
+/// rather than the AppColors.navy/navyDark tokens: those two are close
+/// enough in lightness (0x1E2A3A vs 0x16202C) that the gradient between them
+/// barely read on-device; this pair has a wide enough gap to actually show.
+/// Both stops are dark navy regardless of theme, so the same pair reads
+/// correctly whether the card sits on the light cream page or the dark one.
+const List<Color> _kNavyGradient = [Color(0xFF25384C), Color(0xFF182231)];
+
+/// Card-level drop shadow — separates each card from the cream/dark page
+/// background behind it. Alpha stays in the light 0.08-0.12 range in light
+/// mode as specced; boosted in dark mode so it doesn't vanish against an
+/// already-dark background.
+List<BoxShadow> _cardShadow() {
   final dark = AppColors.brightness == Brightness.dark;
   return [
     BoxShadow(
-      color: Colors.black.withValues(alpha: (dark ? 0.45 : 0.10) * strength),
-      blurRadius: 24.0 * strength,
-      offset: Offset(0, 10.0 * strength),
+      color: Colors.black.withValues(alpha: dark ? 0.40 : 0.10),
+      blurRadius: 22.0,
+      offset: const Offset(0, 8.0),
     ),
+  ];
+}
+
+/// Lighter shadow for smaller raised elements (the icon circle, the brand
+/// mark, the settings button) — same idea, less of it.
+List<BoxShadow> _smallShadow() {
+  final dark = AppColors.brightness == Brightness.dark;
+  return [
     BoxShadow(
-      color: Colors.black.withValues(alpha: (dark ? 0.25 : 0.05) * strength),
-      blurRadius: 6.0 * strength,
-      offset: Offset(0, 2.0 * strength),
+      color: Colors.black.withValues(alpha: dark ? 0.35 : 0.15),
+      blurRadius: 8.0,
+      offset: const Offset(0, 3.0),
     ),
   ];
 }
@@ -184,20 +202,20 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
   Widget _header() {
     return Row(
       children: [
-        // Brand mark — the single terracotta accent on this screen. A subtle
-        // diagonal gradient (navy -> navyDark, both already brightness-aware)
-        // plus a soft shadow give it depth instead of a flat fill.
+        // Brand mark — the single terracotta accent on this screen. The
+        // navy gradient here is the reference the four mode cards below
+        // match exactly.
         Container(
           width: 56.0,
           height: 56.0,
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.navy, AppColors.navyDark],
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: _kNavyGradient,
             ),
             borderRadius: BorderRadius.circular(16.0),
-            boxShadow: _softShadow(strength: 0.7),
+            boxShadow: _smallShadow(),
           ),
           alignment: Alignment.center,
           child: Text(
@@ -227,7 +245,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget> {
             decoration: BoxDecoration(
               color: AppColors.surface,
               shape: BoxShape.circle,
-              boxShadow: _softShadow(strength: 0.4),
+              boxShadow: _smallShadow(),
             ),
             child: IconButton(
               icon: Icon(Icons.settings_rounded,
@@ -344,13 +362,13 @@ class _ModeCardState extends State<_ModeCard> {
         duration: const Duration(milliseconds: 120),
         child: Container(
           decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [AppColors.navy, AppColors.navyDark],
+            gradient: const LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: _kNavyGradient,
             ),
             borderRadius: BorderRadius.circular(_kCardRadius),
-            boxShadow: _softShadow(),
+            boxShadow: _cardShadow(),
           ),
           child: Material(
             type: MaterialType.transparency,
@@ -359,74 +377,63 @@ class _ModeCardState extends State<_ModeCard> {
             child: InkWell(
               onTap: widget.onTap,
               onHighlightChanged: _setPressed,
-              child: Stack(
-                children: [
-                  // Faux-duotone watermark: a large, near-invisible copy of
-                  // the same icon peeking from the corner. Decorative only —
-                  // excluded from the semantics tree so TalkBack never
-                  // announces a second, unlabelled icon.
-                  Positioned(
-                    right: -14.0,
-                    bottom: -14.0,
-                    child: ExcludeSemantics(
-                      child: Icon(
-                        widget.icon,
-                        size: 108.0,
-                        color: AppColors.onNavy.withValues(alpha: 0.06),
+              child: Padding(
+                padding: const EdgeInsets.all(AppSpacing.md),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 64.0,
+                      height: 64.0,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                          colors: [
+                            AppColors.surface,
+                            Color.lerp(
+                                AppColors.surface, AppColors.navy, 0.06)!,
+                          ],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: _smallShadow(),
+                      ),
+                      alignment: Alignment.center,
+                      // onCream (not navy) so the icon still reads clearly
+                      // against this circle in dark mode, where navy and
+                      // surface are both very dark and would otherwise sit
+                      // almost on top of each other.
+                      child: Icon(widget.icon,
+                          size: 30.0, color: AppColors.onCream),
+                    ),
+                    const SizedBox(height: AppSpacing.md),
+                    // Pure white + bold for the title, a warm light grey for
+                    // the description below it — a deliberately wider
+                    // contrast gap than AppColors.onNavy/mutedOnNavy gave,
+                    // so primary vs. secondary is unmistakable at a glance.
+                    // Both fixed (not brightness-derived): the card itself
+                    // stays this same dark navy gradient in both themes, so
+                    // there's no dark-mode variant these need to switch to.
+                    Text(
+                      widget.title,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppText.cardTitle(color: Colors.white),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Flexible(
+                      child: Text(
+                        widget.desc,
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.label(
+                            color: const Color(0xFFB8BFC7)),
                       ),
                     ),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 64.0,
-                          height: 64.0,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                AppColors.surface,
-                                Color.lerp(
-                                    AppColors.surface, AppColors.navy, 0.06)!,
-                              ],
-                            ),
-                            shape: BoxShape.circle,
-                            boxShadow: _softShadow(strength: 0.5),
-                          ),
-                          alignment: Alignment.center,
-                          // onCream (not navy) so the icon still reads
-                          // clearly against this circle in dark mode, where
-                          // navy and surface are both very dark and would
-                          // otherwise sit almost on top of each other.
-                          child: Icon(widget.icon,
-                              size: 30.0, color: AppColors.onCream),
-                        ),
-                        const SizedBox(height: AppSpacing.md),
-                        Text(
-                          widget.title,
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: AppText.cardTitle(),
-                        ),
-                        const SizedBox(height: AppSpacing.xs),
-                        Flexible(
-                          child: Text(
-                            widget.desc,
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppText.label(color: AppColors.mutedOnNavy),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
