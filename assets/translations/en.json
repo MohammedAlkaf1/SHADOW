@@ -8,24 +8,30 @@
     "needHelp": "Need help? ",
     "contactUs": "Contact us",
     "devTools": "Developer Tools",
-    "settings": "Settings"
+    "settings": "Settings",
+    "greetingMorning": "Good morning",
+    "greetingEvening": "Good evening",
+    "scheduleFallback": "Wishing you a great study day",
+    "startListening": "Start Listening",
+    "lastSession": "Last session: {}",
+    "noSessionsYet": "No listening sessions yet"
   },
   "modes": {
     "deaf": {
-      "title": "Deaf / Hard of Hearing",
-      "desc": "Live lecture captioning"
+      "title": "Deaf and Hard of Hearing",
+      "desc": "Turns the lecturer's speech into written text moment by moment, and saves the full transcript to your library once the lecture ends."
     },
     "visual": {
       "title": "Visual Disability",
-      "desc": "Describe surroundings and text"
+      "desc": "Describes your surroundings and reads printed text via the camera"
     },
     "learning": {
       "title": "Learning Difficulties",
-      "desc": "Simplify course materials"
+      "desc": "Summarizes or simplifies a lecture file into points and review questions"
     },
     "physical": {
       "title": "Motor Disability",
-      "desc": "Voice control"
+      "desc": "Full voice control with a quick-contact shortcut to an emergency contact"
     }
   },
   "settings": {

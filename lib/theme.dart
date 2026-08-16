@@ -132,6 +132,94 @@ class AppColors {
   static Color get error => _dark ? AppColorsDark.error : _LightColors.error;
 }
 
+/// "Primary card" tokens for the new home-screen design language — a
+/// distinct set from [AppColors] because their dark-mode behavior is
+/// different, not just a value swap: the primary card (and the small
+/// icon-tile squares that share its look) **inverts** in dark mode — a
+/// cream-filled card with navy text/icon, instead of staying dark like
+/// [AppColors.navy] does everywhere else. That's a deliberate legibility
+/// call (a plain dark card would barely separate from the already-dark
+/// [AppColors.cream] page background in dark mode), not an accident, so it
+/// gets its own token set rather than overloading AppColors' meaning.
+///
+/// Reuses [AppColors.brightness] (kept in sync by main.dart) as the single
+/// source of truth for which mode is active — no separate state to track.
+class EchoColors {
+  EchoColors._();
+
+  static bool get _dark => AppColors.brightness == Brightness.dark;
+
+  /// The "echo" layer — a soft offset shadow-shape peeking out from behind
+  /// the primary card, the one signature layout flourish repeated (once
+  /// per screen) across the new design.
+  static Color get echo => _dark
+      ? const Color(0xFFF1ECE1).withValues(alpha: 0.08)
+      : const Color(0xFF1E2A3A).withValues(alpha: 0.14);
+
+  static Color get primaryBg =>
+      _dark ? const Color(0xFFECE7DC) : const Color(0xFF1E2A3A);
+  static Color get primaryText =>
+      _dark ? const Color(0xFF1E2A3A) : const Color(0xFFF1ECE1);
+  static Color get primarySub => _dark
+      ? const Color(0xFF1E2A3A).withValues(alpha: 0.7)
+      : const Color(0xFFF1ECE1).withValues(alpha: 0.78);
+  static Color get primaryWave => _dark
+      ? const Color(0xFF1E2A3A).withValues(alpha: 0.35)
+      : const Color(0xFFF1ECE1).withValues(alpha: 0.5);
+
+  static List<BoxShadow> get primaryShadow => _dark
+      ? [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.5),
+              blurRadius: 40,
+              offset: const Offset(0, 18)),
+        ]
+      : [
+          BoxShadow(
+              color: const Color(0xFF1E2A3A).withValues(alpha: 0.26),
+              blurRadius: 30,
+              offset: const Offset(0, 14)),
+          BoxShadow(
+              color: const Color(0xFF1E2A3A).withValues(alpha: 0.14),
+              blurRadius: 8,
+              offset: const Offset(0, 3)),
+        ];
+
+  static List<BoxShadow> get shadow => _dark
+      ? [
+          BoxShadow(
+              color: Colors.black.withValues(alpha: 0.38),
+              blurRadius: 24,
+              offset: const Offset(0, 10)),
+        ]
+      : [
+          BoxShadow(
+              color: const Color(0xFF1E2A3A).withValues(alpha: 0.10),
+              blurRadius: 18,
+              offset: const Offset(0, 8)),
+          BoxShadow(
+              color: const Color(0xFF1E2A3A).withValues(alpha: 0.06),
+              blurRadius: 4,
+              offset: const Offset(0, 2)),
+        ];
+
+  static Color get micBg =>
+      _dark ? const Color(0xFF1E2A3A) : const Color(0xFFF1ECE1);
+  static Color get micGlyph =>
+      _dark ? const Color(0xFFF1ECE1) : const Color(0xFF1E2A3A);
+  static List<BoxShadow> get micShadow => [
+        BoxShadow(
+            color: Colors.black.withValues(alpha: _dark ? 0.55 : 0.28),
+            blurRadius: _dark ? 26 : 24,
+            offset: const Offset(0, 10)),
+      ];
+
+  static Color get iconTile =>
+      _dark ? const Color(0xFFF1ECE1) : const Color(0xFF1E2A3A);
+  static Color get iconGlyph =>
+      _dark ? const Color(0xFF1E2A3A) : const Color(0xFFF1ECE1);
+}
+
 class AppSpacing {
   AppSpacing._();
 
