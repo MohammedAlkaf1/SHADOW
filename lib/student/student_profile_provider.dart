@@ -67,10 +67,14 @@ class StudentProfileProvider extends ChangeNotifier {
   void applyPlatformProfile({
     required List<String> enabledTools,
     required AdaptationDirectives directives,
+    String? fullName,
+    String? fullNameEn,
   }) {
     _profile = _profile.copyWith(
       enabledTools: enabledTools,
       directives: directives,
+      fullName: fullName,
+      fullNameEn: fullNameEn,
     );
     notifyListeners();
   }

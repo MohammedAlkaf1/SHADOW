@@ -127,10 +127,26 @@ class StudentProfile {
     required this.supportLevel,
     this.directives,
     this.enabledTools = const [],
+    this.fullName,
+    this.fullNameEn,
   });
 
   final StudentCategory category;
   final SupportLevel supportLevel;
+
+  /// The real student name from the platform (User.fullName/fullNameEn).
+  /// Null before a real platform profile is ever loaded — there is no local
+  /// fallback name; callers show their own placeholder (e.g. the saved
+  /// login email) instead of inventing one.
+  final String? fullName;
+  final String? fullNameEn;
+
+  /// Locale-aware display name, falling back to [fullName] when the
+  /// English name isn't set (not every account has one), and null when
+  /// neither is loaded yet.
+  String? displayName(String languageCode) => languageCode == 'en'
+      ? (fullNameEn ?? fullName)
+      : (fullName ?? fullNameEn);
 
   /// Platform-computed adaptation directives for a real logged-in student.
   /// Null before login, when offline with nothing cached yet, or in
@@ -290,12 +306,16 @@ class StudentProfile {
     SupportLevel? supportLevel,
     AdaptationDirectives? directives,
     List<String>? enabledTools,
+    String? fullName,
+    String? fullNameEn,
   }) =>
       StudentProfile(
         category: category ?? this.category,
         supportLevel: supportLevel ?? this.supportLevel,
         directives: directives ?? this.directives,
         enabledTools: enabledTools ?? this.enabledTools,
+        fullName: fullName ?? this.fullName,
+        fullNameEn: fullNameEn ?? this.fullNameEn,
       );
 
   @override

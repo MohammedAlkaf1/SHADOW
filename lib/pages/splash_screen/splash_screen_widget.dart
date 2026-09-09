@@ -43,6 +43,8 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
         context.read<StudentProfileProvider>().applyPlatformProfile(
               enabledTools: profileResult.data.enabledTools,
               directives: profileResult.data.directives,
+              fullName: profileResult.data.fullName,
+              fullNameEn: profileResult.data.fullNameEn,
             );
       }
       PlatformClient.startAutoFlushTimer();

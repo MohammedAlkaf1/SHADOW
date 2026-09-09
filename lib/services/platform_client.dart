@@ -82,10 +82,19 @@ class StudentPlatformProfile {
     required this.enabledTools,
     required this.directives,
     required this.raw,
+    this.fullName,
+    this.fullNameEn,
   });
 
   final List<String> enabledTools;
   final AdaptationDirectives directives;
+
+  /// The real student name from the platform's user record (User.fullName /
+  /// User.fullNameEn). [fullNameEn] is nullable server-side (not every
+  /// account has an English name entered) — callers should fall back to
+  /// [fullName] when it's absent rather than guessing a translation.
+  final String? fullName;
+  final String? fullNameEn;
 
   /// The full decoded JSON response — cached verbatim so a later offline
   /// read can reconstruct this object without re-deriving anything.
@@ -99,6 +108,8 @@ class StudentPlatformProfile {
             const [],
         directives: AdaptationDirectives.fromJson(
             json['adaptationDirectives'] as Map<String, dynamic>? ?? const {}),
+        fullName: json['fullName'] as String?,
+        fullNameEn: json['fullNameEn'] as String?,
         raw: json,
       );
 }
