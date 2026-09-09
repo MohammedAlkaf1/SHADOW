@@ -139,18 +139,18 @@ class AppPrefs {
     aOptions: AndroidOptions(encryptedSharedPreferences: true),
   );
 
-  // ── "Remember me" saved login credentials ───────────────────────────────
+  // ── "Remember me" saved login email ─────────────────────────────────────
   //
   // Requested explicitly for the login screen's "تذكرني" checkbox: unlike
   // the refresh-token session restore above (which never touches the
-  // password), this persists the raw email/password so the login form can
-  // repopulate itself. Still routed through flutter_secure_storage (Android
-  // Keystore / EncryptedSharedPreferences, iOS Keychain) rather than plain
-  // SharedPreferences, but a stored, reusable password is inherently more
-  // exposed than a revocable refresh token — kept as an additive UX layer on
-  // top of the token-based restore, not a replacement for it.
+  // password), this persists the email only so the login form can
+  // repopulate that field. The password is deliberately never stored here —
+  // a stored, reusable password would be inherently more exposed than a
+  // revocable refresh token; staying logged in across sessions is already
+  // handled entirely by the refresh token above. Still routed through
+  // flutter_secure_storage (Android Keystore / EncryptedSharedPreferences,
+  // iOS Keychain) rather than plain SharedPreferences.
   static const _kSavedEmail = 'saved_email';
-  static const _kSavedPassword = 'saved_password';
   static const _kRememberMe = 'remember_me';
 
   static Future<bool> getRememberMe() async {
@@ -162,35 +162,30 @@ class AppPrefs {
     }
   }
 
-  /// Returns (email, password) if "remember me" was on and both are stored,
+  /// Returns the saved email if "remember me" was on and one is stored,
   /// else null.
-  static Future<(String, String)?> getSavedCredentials() async {
+  static Future<String?> getSavedEmail() async {
     try {
       if (!await getRememberMe()) return null;
-      final email = await _secureStorage.read(key: _kSavedEmail);
-      final password = await _secureStorage.read(key: _kSavedPassword);
-      if (email == null || password == null) return null;
-      return (email, password);
+      return await _secureStorage.read(key: _kSavedEmail);
     } catch (e) {
-      debugPrint('⚠️ AppPrefs.getSavedCredentials failed: $e');
+      debugPrint('⚠️ AppPrefs.getSavedEmail failed: $e');
       return null;
     }
   }
 
-  static Future<void> saveCredentials(String email, String password) async {
+  static Future<void> saveEmailForRememberMe(String email) async {
     try {
       await _secureStorage.write(key: _kSavedEmail, value: email);
-      await _secureStorage.write(key: _kSavedPassword, value: password);
       await _secureStorage.write(key: _kRememberMe, value: 'true');
     } catch (e) {
-      debugPrint('⚠️ AppPrefs.saveCredentials failed: $e');
+      debugPrint('⚠️ AppPrefs.saveEmailForRememberMe failed: $e');
     }
   }
 
   static Future<void> clearSavedCredentials() async {
     try {
       await _secureStorage.delete(key: _kSavedEmail);
-      await _secureStorage.delete(key: _kSavedPassword);
       await _secureStorage.delete(key: _kRememberMe);
     } catch (e) {
       debugPrint('⚠️ AppPrefs.clearSavedCredentials failed: $e');

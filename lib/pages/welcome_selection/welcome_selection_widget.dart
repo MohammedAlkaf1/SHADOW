@@ -5,6 +5,7 @@ import '/pages/notifications/notifications_screen.dart';
 import '/pages/voice_exam/voice_exam_list_widget.dart';
 import '/services/app_prefs.dart';
 import '/services/mentor_triggers.dart';
+import '/student/student_profile.dart';
 import '/theme.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
@@ -85,8 +86,8 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget>
     // (moderate/intensive only). Never shown to the student.
     MentorTriggers.onAppOpen();
 
-    AppPrefs.getSavedCredentials().then((creds) {
-      if (mounted && creds != null) setState(() => _savedEmail = creds.$1);
+    AppPrefs.getSavedEmail().then((email) {
+      if (mounted && email != null) setState(() => _savedEmail = email);
     });
   }
 
@@ -252,12 +253,13 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget>
   }
 
   /// Welcome line under the header, above the hero card — "Hello, {name}".
-  /// The name has no real student-directory source, so it's derived from
-  /// the remembered login email (same fallback pattern as the profile and
-  /// settings screens); falls back to the app title if nothing is saved yet
-  /// (e.g. first launch before AppPrefs.getSavedCredentials resolves).
+  /// Real name from the platform (User.fullName/fullNameEn, same source as
+  /// the profile screen); falls back to the saved-login-email username
+  /// until a platform profile has been fetched.
   Widget _greeting() {
-    final name = _savedEmail?.split('@').first ?? 'app.title'.tr();
+    final name = StudentProfile.current.displayName(context.locale.languageCode) ??
+        _savedEmail?.split('@').first ??
+        'app.title'.tr();
     return Text('home.greeting'.tr(args: [name]),
         textAlign: TextAlign.start,
         style: AppText.custom(

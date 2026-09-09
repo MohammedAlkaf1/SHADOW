@@ -43,20 +43,19 @@ class _LoginWidgetState extends State<LoginWidget> {
     _prefillSavedCredentials();
   }
 
-  /// If "تذكرني" was checked on a previous login, repopulate the form from
-  /// the saved (secure-storage-backed) email/password so the student doesn't
-  /// have to retype them. Independent of PlatformClient.tryRestoreSession()
-  /// (the splash screen's refresh-token path) — that skips this screen
-  /// entirely when it succeeds, so this only ever runs when the student is
-  /// actually looking at the login form (no valid session to silently
-  /// restore, or the token expired/was revoked).
+  /// If "تذكرني" was checked on a previous login, repopulate the email field
+  /// from the saved (secure-storage-backed) email so the student doesn't have
+  /// to retype it — the password is never stored, so it still has to be
+  /// re-entered. Independent of PlatformClient.tryRestoreSession() (the
+  /// splash screen's refresh-token path) — that skips this screen entirely
+  /// when it succeeds, so this only ever runs when the student is actually
+  /// looking at the login form (no valid session to silently restore, or the
+  /// token expired/was revoked).
   Future<void> _prefillSavedCredentials() async {
-    final saved = await AppPrefs.getSavedCredentials();
-    if (saved == null || !mounted) return;
-    final (email, password) = saved;
+    final email = await AppPrefs.getSavedEmail();
+    if (email == null || !mounted) return;
     setState(() {
       _emailController.text = email;
-      _passwordController.text = password;
       _rememberMe = true;
     });
   }
@@ -96,10 +95,10 @@ class _LoginWidgetState extends State<LoginWidget> {
       return;
     }
 
-    // "تذكرني": save the raw credentials for form-prefill next time, or
-    // clear anything previously saved if the student just unchecked it.
+    // "تذكرني": save the email for form-prefill next time (never the
+    // password), or clear anything previously saved if unchecked.
     if (_rememberMe) {
-      await AppPrefs.saveCredentials(email, password);
+      await AppPrefs.saveEmailForRememberMe(email);
     } else {
       await AppPrefs.clearSavedCredentials();
     }
@@ -114,6 +113,8 @@ class _LoginWidgetState extends State<LoginWidget> {
       context.read<StudentProfileProvider>().applyPlatformProfile(
             enabledTools: profileResult.data.enabledTools,
             directives: profileResult.data.directives,
+            fullName: profileResult.data.fullName,
+            fullNameEn: profileResult.data.fullNameEn,
           );
     }
     PlatformClient.startAutoFlushTimer();

@@ -47,8 +47,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     PlatformClient.isLoggedIn.then((value) {
       if (mounted) setState(() => _loggedIn = value);
     });
-    AppPrefs.getSavedCredentials().then((creds) {
-      if (mounted && creds != null) setState(() => _savedEmail = creds.$1);
+    AppPrefs.getSavedEmail().then((email) {
+      if (mounted && email != null) setState(() => _savedEmail = email);
     });
   }
 

@@ -30,8 +30,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   void initState() {
     super.initState();
-    AppPrefs.getSavedCredentials().then((creds) {
-      if (mounted && creds != null) setState(() => _savedEmail = creds.$1);
+    AppPrefs.getSavedEmail().then((email) {
+      if (mounted && email != null) setState(() => _savedEmail = email);
     });
   }
 
@@ -40,6 +40,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final supportLevel = context.locale.languageCode == 'ar'
         ? StudentProfile.current.supportLevel.arabicLabel
         : StudentProfile.current.supportLevel.englishLabel;
+    // Real name from the platform (User.fullName/fullNameEn — see
+    // PlatformClient.getStudentProfile). Null until a platform profile has
+    // been fetched at least once; falls back to the saved-login-email
+    // username rather than inventing a name.
+    final studentName = StudentProfile.current.displayName(context.locale.languageCode) ??
+        _savedEmail?.split('@').first ??
+        'app.title'.tr();
 
     return Scaffold(
       backgroundColor: AppColors.cream,
@@ -53,16 +60,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    _identityCard(),
+                    _identityCard(studentName),
                     const SizedBox(height: 20.0),
                     _sectionLabel('profile.academicData'.tr()),
                     _card([
-                      // Real: derived from the remembered login email — no
-                      // student-directory API exists to fetch an actual name.
-                      _row(
-                          value: _savedEmail?.split('@').first ?? 'app.title'.tr(),
-                          label: 'profile.studentName'.tr()),
-                      // Placeholder — no student-directory data source yet.
+                      // Real: platform-fetched name (see studentName above).
+                      _row(value: studentName, label: 'profile.studentName'.tr()),
                       _row(value: '2021104', label: 'profile.studentId'.tr()),
                       _row(value: 'profile.universityValue'.tr(), label: 'profile.university'.tr()),
                       _row(value: 'profile.departmentValue'.tr(), label: 'profile.department'.tr()),
@@ -128,7 +131,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _identityCard() {
+  Widget _identityCard(String studentName) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.symmetric(horizontal: 18.8, vertical: 22.8),
@@ -150,7 +153,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             child: Icon(Icons.person_rounded, size: 30.0, color: EchoColors.primaryBg),
           ),
           const SizedBox(height: 10.0),
-          Text(_savedEmail?.split('@').first ?? 'app.title'.tr(),
+          Text(studentName,
               textAlign: TextAlign.center,
               style: AppText.custom(
                   fontSize: 19, fontWeight: FontWeight.w800, height: 1.4, color: EchoColors.primaryText)),
