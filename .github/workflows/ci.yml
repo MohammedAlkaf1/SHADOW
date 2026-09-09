@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  analyze-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos=false
+
+      - name: Run tests
+        run: flutter test
+
+      - name: Dependency audit (advisory, does not fail the build)
+        run: flutter pub outdated || true
+
+      # No env.json/API keys are available in CI (they're git-ignored
+      # secrets — see README's "API keys" section). Building with empty
+      # keys is still a valid smoke test: the app is designed to degrade
+      # gracefully ("key missing" message) rather than crash, so this
+      # step still catches real compile/build regressions without
+      # needing real Deepgram/Gemini credentials in CI.
+      - name: Debug build smoke test (no real API keys)
+        run: |
+          echo '{"DEEPGRAM_API_KEY":"","GEMINI_API_KEY":"","PLATFORM_BASE_URL":"http://localhost:3000/api"}' > env.ci.json
+          flutter build apk --debug --dart-define-from-file=env.ci.json
