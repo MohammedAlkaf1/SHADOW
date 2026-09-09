@@ -51,3 +51,15 @@ Icon appBackIcon(BuildContext context, {Color? color, double size = 22}) {
     size: size,
   );
 }
+
+/// Disclosure chevron that points the reading-correct "into/forward" way —
+/// the opposite of [appBackIcon]: left in RTL, right in LTR. For rows that
+/// navigate to a sub-screen or open a picker (e.g. settings rows).
+Icon appForwardChevron(BuildContext context, {Color? color, double size = 18}) {
+  final isRtl = Directionality.of(context) == TextDirection.rtl;
+  return Icon(
+    isRtl ? Icons.chevron_left_rounded : Icons.chevron_right_rounded,
+    color: color ?? AppColors.onCream,
+    size: size,
+  );
+}

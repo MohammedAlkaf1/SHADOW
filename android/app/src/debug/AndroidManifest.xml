@@ -3,4 +3,10 @@
          to allow setting breakpoints, to provide hot reload, etc.
     -->
     <uses-permission android:name="android.permission.INTERNET"/>
+
+    <!-- Debug builds only: allow cleartext HTTP to reach a local dev server
+         (see res/xml/network_security_config.xml for why). Gradle merges
+         this <application> tag's attributes into the debug manifest only —
+         release builds use src/main's manifest, which doesn't set this. -->
+    <application android:networkSecurityConfig="@xml/network_security_config" />
 </manifest>

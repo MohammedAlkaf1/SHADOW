@@ -1,6 +1,8 @@
-# UniAccess
+# Shadow (شادو)
 
-A new Flutter project.
+A Flutter client app for students with disabilities/support needs
+(deaf/hard-of-hearing, visual, learning-difficulty, and motor-impairment
+modes), backed by the separate Shadow Platform API (`D:\Shadow\platform`).
 
 ## Getting Started
 
@@ -42,14 +44,18 @@ out of the command line and logs.
    ```json
    {
      "DEEPGRAM_API_KEY": "your_deepgram_key",
-     "OPENAI_API_KEY": "your_openai_key",
+     "GEMINI_API_KEY": "your_gemini_key",
      "PLATFORM_BASE_URL": "http://localhost:3000/api"
    }
    ```
    `env.json` is git-ignored — it is never committed. `env.example.json` (empty
    placeholders) is the committed template. Deepgram powers live captions and voice
-   control; OpenAI powers vision and document simplification (leave it "" if you
-   don't have one yet — those two modes just show a "key missing" message).
+   control; Gemini powers vision, document simplification, and summarization
+   (leave it "" if you don't have one yet — those modes just show a "key missing"
+   message). Both keys are compiled into the client binary via `--dart-define` —
+   they are extractable from a built APK, so treat them as **not fully secret**;
+   for a public production release, proxy these calls through your own backend
+   instead of calling Deepgram/Gemini directly from the client.
    `PLATFORM_BASE_URL` points at the Shadow Platform backend (see
    `D:\Shadow\platform`, `docs/API.md` there) — defaults to
    `http://localhost:3000/api` for local dev if omitted.
@@ -58,9 +64,8 @@ out of the command line and logs.
 
 This app is a client of the separate Shadow Platform backend
 (`D:\Shadow\platform`). On first launch (or after logout) the app shows a
-**login screen** (email + password against the platform's demo accounts,
-e.g. `student@demo.shadow.sa` / `Password123!` — see the platform's own
-README for the full demo credential list). After login:
+**login screen** (email + password against the platform's accounts — see
+the platform's own README/seed data for its demo-account list). After login:
 
 - The mode-selection (home) screen only shows the 4 top-level mode cards
   (deaf/visual/learning/physical) that are enabled on the student's
@@ -84,9 +89,6 @@ README for the full demo credential list). After login:
   `lib/services/app_prefs.dart`), and queues usage events locally until
   connectivity returns. A dead platform connection never blocks a mode from
   working.
-- The debug-only Developer Tools screen (`lib/pages/dev_tools`) still lets a
-  developer override category/support-level locally without a platform
-  session — useful for testing adaptation behavior without a live backend.
 
 ## Building and running on Android
 
@@ -116,3 +118,26 @@ release signing config is needed before store distribution.
 **Note on minSdk:** if a build fails on an older device because the audio/`record`
 plugin needs a higher API level, set `minSdkVersion 23` in `android/app/build.gradle`
 and rebuild.
+
+## Before a real (Play Store / production) release
+
+This checklist is **not yet complete** — do these before shipping to real users:
+
+- [ ] **Release signing.** `android/app/build.gradle`'s `release` build type still
+      signs with the debug key (`signingConfig signingConfigs.debug`). Generate a
+      real upload keystore, fill in `android/key.properties` (git-ignored, see
+      `keystoreProperties` in `build.gradle`), and switch the release build type to
+      `signingConfigs.release`.
+- [ ] **`PLATFORM_BASE_URL` must point at the real deployed backend**, not a
+      local server or a temporary tunnel (e.g. ngrok) — those are dev-only and
+      will go offline/rotate outside of a dev session.
+- [ ] **Privacy policy.** Google Play requires a hosted privacy policy URL for
+      any app requesting microphone/camera and sending data to third parties
+      (Deepgram, Gemini) — write one and link it in the Play Console listing.
+- [ ] **API keys.** `DEEPGRAM_API_KEY`/`GEMINI_API_KEY` are compiled into the
+      client via `--dart-define` and are extractable from the built APK. For a
+      public release, proxy these calls through your own backend so the raw
+      provider keys never ship inside the app.
+- [ ] **Demo/seed accounts** on the platform backend (if any) should be
+      disabled or use rotated, non-guessable credentials before the backend is
+      pointed at by a publicly-distributed build.

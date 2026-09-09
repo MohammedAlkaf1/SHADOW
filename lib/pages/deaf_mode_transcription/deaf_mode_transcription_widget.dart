@@ -1,11 +1,10 @@
 import 'dart:async';
+import 'dart:math';
 
 import '/a11y.dart';
 import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
-import '/flutter_flow/flutter_flow_widgets.dart';
 import '/theme.dart';
-import 'dart:math';
 import '/custom_code/actions/index.dart' as actions;
 import '/pages/consent/consent_screen.dart';
 import '/services/ai_client.dart';
@@ -19,7 +18,6 @@ import '/services/transcript_store.dart';
 import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
-import 'saved_transcripts_page.dart';
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -28,6 +26,12 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:provider/provider.dart';
 import 'deaf_mode_transcription_model.dart';
 export 'deaf_mode_transcription_model.dart';
+
+// Visual-only constants for this screen's redesign — screen-local per the
+// pattern established on the home screen, so this pass touches only this
+// file.
+const double _kPrimaryCardRadius = 26.0;
+const double _kEchoRadius = 26.0;
 
 class DeafModeTranscriptionWidget extends StatefulWidget {
   const DeafModeTranscriptionWidget({super.key});
@@ -41,8 +45,7 @@ class DeafModeTranscriptionWidget extends StatefulWidget {
 }
 
 class _DeafModeTranscriptionWidgetState
-    extends State<DeafModeTranscriptionWidget>
-    with TickerProviderStateMixin {
+    extends State<DeafModeTranscriptionWidget> with TickerProviderStateMixin {
   late DeafModeTranscriptionModel _model;
   late AnimationController _animController;
 
@@ -51,12 +54,24 @@ class _DeafModeTranscriptionWidgetState
   // Guards against the record toggle firing twice during a transition.
   bool _recordBusy = false;
 
+  // Course-selection step (before recording) so this session's Deepgram
+  // keyterm boost-list can include the selected course's own approved
+  // lecture terms, not just the generic cross-subject dictionary — see
+  // technical_terms_dictionary.dart's buildDeepgramKeytermsWithCoursePriority.
+  // Auto-selected silently when the student has exactly one course; the
+  // picker UI only ever appears when there's a real choice to make. Zero
+  // courses degrades to no course-specific boost at all — never blocks
+  // recording (task's explicit "لا تُظهر خطأ، فقط استمر" requirement).
+  List<String> _courses = [];
+  String? _selectedCourseCode;
+  List<String> _courseKeyterms = [];
+  bool _loadingCourses = true;
+
   // Quiet auto-summary (moderate/intensive support only) — session-only, not
   // persisted, and never touches FFAppState.liveText or the recording state.
+  // No UI on this screen surfaces it (not part of the approved design); the
+  // service keeps running in the background per support-level gating below.
   final _autoSummaryService = AutoSummaryService();
-  String? _autoSummary;
-  bool _summaryPanelExpanded = false;
-  bool _summarizingNow = false;
 
   // "اقرأ لي" (learning-difficulties only) — reads the live transcript aloud
   // via the existing speakArabicText/stopArabicSpeaking actions (already
@@ -81,6 +96,43 @@ class _DeafModeTranscriptionWidgetState
     // Enforce transcript retention (auto-expiry) on entry.
     AppPrefs.getRetentionDays()
         .then((days) => TranscriptStore.instance.purgeExpired(days));
+    _loadCourses();
+  }
+
+  Future<void> _loadCourses() async {
+    debugPrint('📚 _loadCourses: requesting GET /student/courses');
+    final result = await PlatformClient.getStudentCourses();
+    debugPrint('📚 _loadCourses: result isSuccess=${result.isSuccess} '
+        '${result.isSuccess ? "count=${result.data.length} courses=${result.data}" : "error=${result.errorMessage}"}');
+    if (!mounted) return;
+    safeSetState(() {
+      _loadingCourses = false;
+      _courses = result.isSuccess ? result.data : [];
+    });
+    // Exactly one course: skip the picker step entirely, per the task's
+    // explicit "لا تزعجه بخطوة إضافية" instruction.
+    if (_courses.length == 1) {
+      debugPrint('📚 _loadCourses: exactly one course — auto-selecting '
+          '${_courses.first}');
+      _selectCourse(_courses.first);
+    } else {
+      debugPrint('📚 _loadCourses: ${_courses.length} courses — '
+          '${_courses.length > 1 ? "picker will show" : "no course, proceeding without course keyterms"}');
+    }
+  }
+
+  Future<void> _selectCourse(String courseCode) async {
+    debugPrint('📚 _selectCourse: selected=$courseCode, requesting keyterms');
+    safeSetState(() => _selectedCourseCode = courseCode);
+    final result = await PlatformClient.getCourseKeyterms(courseCode);
+    debugPrint('📚 _selectCourse: keyterms result isSuccess=${result.isSuccess} '
+        '${result.isSuccess ? "count=${result.data.length}" : "error=${result.errorMessage}"}');
+    if (!mounted) return;
+    // No terms yet (faculty hasn't uploaded slides) or the fetch itself
+    // failed — either way this is silent, never an error shown to the
+    // student: recording still works normally, just without the
+    // course-specific boost (task 3's explicit requirement).
+    safeSetState(() => _courseKeyterms = result.isSuccess ? result.data : []);
   }
 
   @override
@@ -109,30 +161,15 @@ class _DeafModeTranscriptionWidgetState
     super.dispose();
   }
 
-  void _onAutoSummary(String summary) {
-    if (!mounted) return;
-    safeSetState(() {
-      _autoSummary = summary;
-      _summarizingNow = false;
-    });
-  }
-
-  /// Manual "لخّص لي الآن" (intensive support only) — a deliberate tap, so it
-  /// goes through the full consent dialog (unlike the silent periodic ticks).
-  Future<void> _summarizeNow() async {
-    if (!await ensureAiConsent(context)) return;
-    if (!mounted) return;
-    safeSetState(() => _summarizingNow = true);
-    await _autoSummaryService.triggerNow();
-    if (mounted && _summarizingNow) {
-      safeSetState(() => _summarizingNow = false);
-    }
-  }
+  // No UI on this screen surfaces the auto-summary result (not part of the
+  // approved design) — the service still needs a callback to run, so this
+  // is an intentional no-op rather than a half-wired feature.
+  void _onAutoSummary(String summary) {}
 
   // Corrected once here so every consumer (display, save, copy, TTS,
   // auto-summary input) sees the same fixed-up text — not just the screen.
-  String get _currentText => correctTechnicalTerms(
-      FFAppState().liveText.isNotEmpty
+  String get _currentText =>
+      correctTechnicalTerms(FFAppState().liveText.isNotEmpty
           ? FFAppState().liveText
           : (_model.liveText ?? ''));
 
@@ -200,12 +237,6 @@ class _DeafModeTranscriptionWidgetState
     _snack('deaf.textCopied'.tr(), essential: false);
   }
 
-  void _openSaved() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const SavedTranscriptsPage()),
-    );
-  }
-
   /// [essential] messages (blocking errors, guidance on why something didn't
   /// happen) always show. Non-essential ones (pure success confirmations
   /// like "تم حفظ النص") are suppressed for the neurodevelopmental category
@@ -221,7 +252,8 @@ class _DeafModeTranscriptionWidgetState
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(text,
-            textAlign: TextAlign.start, style: AppText.body(color: AppColors.onNavy)),
+            textAlign: TextAlign.start,
+            style: AppText.body(color: AppColors.onNavy)),
         backgroundColor: AppColors.navy,
         behavior: SnackBarBehavior.floating,
       ),
@@ -240,60 +272,6 @@ class _DeafModeTranscriptionWidgetState
             : 'deaf.micPermissionNeeded'.tr(),
         essential: true);
     return false;
-  }
-
-  // Font-size only. The old language radio here was dead (hardcoded to
-  // 'ar', onChanged did nothing) and is now redundant with the real,
-  // functional app-language choice in the global Settings screen — removed
-  // rather than translated, to avoid shipping a second, misleading language
-  // control.
-  void _showSettingsDialog() {
-    showDialog(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setDialogState) {
-          return AlertDialog(
-            backgroundColor: AppColors.surface,
-            shape:
-                RoundedRectangleBorder(borderRadius: BorderRadius.circular(24.0)),
-            title: Text(
-              'common.fontSize'.tr(),
-              textAlign: TextAlign.start,
-              style: AppText.title(),
-            ),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Slider(
-                  activeColor: AppColors.terracotta,
-                  inactiveColor: AppColors.border,
-                  value: FFAppState().readingFontSize.clamp(14.0, 32.0),
-                  min: 14.0,
-                  max: 32.0,
-                  divisions: 9,
-                  label: '${FFAppState().readingFontSize.round()}',
-                  onChanged: (val) {
-                    setDialogState(() {});
-                    FFAppState().update(() {
-                      FFAppState().readingFontSize = val;
-                    });
-                  },
-                ),
-              ],
-            ),
-            actionsAlignment: MainAxisAlignment.start,
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: Text('common.close'.tr(),
-                    style: AppText.button(color: AppColors.navy)),
-              ),
-            ],
-          );
-        },
-      ),
-    );
   }
 
   /// Live-transcript text. Intensive support additionally highlights
@@ -366,39 +344,188 @@ class _DeafModeTranscriptionWidgetState
     );
   }
 
-  Widget _buildWaveform(bool isRecording, double t) {
-    const baseHeights = [12.0, 24.0, 40.0, 28.0, 16.0];
-    const amplitudes = [8.0, 12.0, 10.0, 10.0, 6.0];
-    const phases = [0.0, 0.4, 0.8, 0.2, 0.6];
-    // Neurodevelopmental support: no pulsing bars — same colours convey the
-    // recording state, but the shape stays still.
-    final animates = isRecording && !StudentProfile.current.usesStaticAnimations;
+  /// Mic-tap handler for the new primary card's mic button — the exact
+  /// original toggle logic (consent + permission gating, auto-summary
+  /// start/stop, `_recordBusy` re-entrancy guard), just extracted out of the
+  /// old inline `onTap` closure so `_MicButton` can call it directly.
+  Future<void> _handleMicTap() async {
+    debugPrint('🎙️ _handleMicTap: tapped. isRecording=${FFAppState().isRecording} '
+        'recordBusy=$_recordBusy courses=${_courses.length} '
+        'selectedCourse=$_selectedCourseCode courseKeyterms=${_courseKeyterms.length}');
+    if (_recordBusy) return;
+    _recordBusy = true;
+    try {
+      // Gate consent + mic permission BEFORE toggling isRecording so the OS
+      // dialog can't interleave.
+      if (!FFAppState().isRecording) {
+        // A real choice among 2+ courses is still pending — the picker UI
+        // is showing instead of the mic card's usual state; nothing to do
+        // here (see _primaryMicCard's gating). Single-course/no-course
+        // students never hit this (auto-selected or skipped entirely).
+        if (_courses.length > 1 && _selectedCourseCode == null) {
+          debugPrint('🎙️ _handleMicTap: BLOCKED — course choice pending');
+          return;
+        }
+        if (!await ensureAiConsent(context)) {
+          debugPrint('🎙️ _handleMicTap: BLOCKED — AI consent not granted');
+          return;
+        }
+        if (!await _ensureMicPermission()) {
+          debugPrint('🎙️ _handleMicTap: BLOCKED — mic permission not granted');
+          return;
+        }
+      }
+      debugPrint('🎙️ _handleMicTap: calling startRealtimeTranscription '
+          'with ${_courseKeyterms.length} course keyterms');
+      await actions.startRealtimeTranscription(courseKeyterms: _courseKeyterms);
+      debugPrint('🎙️ _handleMicTap: startRealtimeTranscription returned, '
+          'isRecording=${FFAppState().isRecording}');
+      // Start/stop the quiet auto-summary alongside the recording it now
+      // tracks — never touches the transcription itself either way.
+      if (FFAppState().isRecording) {
+        _autoSummaryService.start(
+          latestText: () => _currentText,
+          onSummary: _onAutoSummary,
+        );
+      } else {
+        _autoSummaryService.stop();
+      }
+      if (mounted) safeSetState(() {});
+    } finally {
+      _recordBusy = false;
+    }
+  }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        for (int i = 0; i < 5; i++) ...[
-          if (i > 0) const SizedBox(width: 6.0),
-          Container(
-            width: 4.0,
-            height: animates
-                ? (baseHeights[i] +
-                        sin((t + phases[i]) * 2 * pi) * amplitudes[i])
-                    .abs()
-                    .clamp(8.0, 52.0)
-                : baseHeights[i],
-            decoration: BoxDecoration(
-              color: isRecording
-                  ? AppColors.terracotta
-                  : (i == 2
-                      ? AppColors.navy
-                      : AppColors.navy.withValues(alpha: i % 2 == 0 ? 0.4 : 0.6)),
-              borderRadius: BorderRadius.circular(9999.0),
+  /// True only when there's a real choice the student hasn't made yet (2+
+  /// courses, none selected). Single-course and no-course students never
+  /// see this — see _loadCourses' auto-select / graceful-skip logic.
+  bool get _coursePickerPending =>
+      !_loadingCourses && _courses.length > 1 && _selectedCourseCode == null;
+
+  /// Course-selection step, shown above the mic card only while
+  /// [_coursePickerPending] — "اختر المقرر... قبل ما يضغط زر التسجيل".
+  Widget _coursePickerCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(AppSpacing.lg),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(_kPrimaryCardRadius),
+        border: Border.all(color: AppColors.border),
+        boxShadow: EchoColors.shadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text('deaf.selectCourseTitle'.tr(),
+              textAlign: TextAlign.start,
+              style: AppText.custom(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  height: 1.4,
+                  color: AppColors.onCream)),
+          const SizedBox(height: AppSpacing.sm),
+          a11yButton(
+            label: 'deaf.selectCourseTitle'.tr(),
+            child: DropdownButtonFormField<String>(
+              initialValue: null,
+              hint: Text('deaf.selectCourseHint'.tr(),
+                  style: AppText.body(color: AppColors.mutedOnCream)),
+              decoration: InputDecoration(
+                enabledBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.border)),
+                focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.navy, width: 2.0)),
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+              ),
+              items: _courses
+                  .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) _selectCourse(value);
+              },
             ),
           ),
         ],
-      ],
+      ),
+    );
+  }
+
+  /// The new mic-control primary card: echo layer behind it, wave bars
+  /// above the mic button, the mic button itself (with a terracotta pulse
+  /// ring while recording), and the recording-state label below —
+  /// replacing the old two-ring navy/terracotta record button.
+  Widget _primaryMicCard(bool recording) {
+    final animate = !StudentProfile.current.usesStaticAnimations;
+    return Opacity(
+      // Visually reflects the functional block already in _handleMicTap —
+      // a pending course choice makes the mic card look inert rather than
+      // just silently doing nothing on tap.
+      opacity: _coursePickerPending ? 0.4 : 1.0,
+      child: Padding(
+        // Room for the echo layer's peek beyond the card's own bottom-end
+        // edge so it doesn't get clipped by this widget's own bounds.
+        padding: const EdgeInsetsDirectional.only(bottom: 10.0),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            PositionedDirectional(
+              top: 16.0,
+              bottom: -10.0,
+              start: 16.0,
+              end: -8.0,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  color: EchoColors.echo,
+                  borderRadius: BorderRadius.circular(_kEchoRadius),
+                ),
+              ),
+            ),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(24.0, 24.0, 24.0, 22.0),
+              decoration: BoxDecoration(
+                color: EchoColors.primaryBg,
+                borderRadius: BorderRadius.circular(_kPrimaryCardRadius),
+                border: Border.all(color: EchoColors.primaryBg),
+                boxShadow: EchoColors.primaryShadow,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  _DeafWaveBars(animate: animate),
+                  const SizedBox(height: AppSpacing.lg),
+                  _MicButton(
+                    recording: recording,
+                    animate: animate,
+                    label: recording
+                        ? 'deaf.stopRecording'.tr()
+                        : 'deaf.startRecording'.tr(),
+                    onTap: _handleMicTap,
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    recording
+                        ? 'deaf.recordingInProgress'.tr()
+                        : 'deaf.pressToRecord'.tr(),
+                    textAlign: TextAlign.center,
+                    style: AppText.custom(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        height: 1.3,
+                        color: EchoColors.primaryText),
+                  ),
+                  // Mild-cognitive support: permanent caption under the
+                  // primary action.
+                  if (StudentProfile.current.showsPermanentTooltips)
+                    permanentCaption('deaf.recordCaption'.tr()),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -412,21 +539,21 @@ class _DeafModeTranscriptionWidgetState
     final recording = FFAppState().isRecording;
 
     return GestureDetector(
-        onTap: () {
-          FocusScope.of(context).unfocus();
-          FocusManager.instance.primaryFocus?.unfocus();
-        },
-        child: Scaffold(
-          key: scaffoldKey,
-          backgroundColor: AppColors.cream,
-          // Custom header (not a real AppBar) — without SafeArea it renders
-          // under the status bar, clipping the top of the page title.
-          body: SafeArea(
-            child: Column(
-              mainAxisSize: MainAxisSize.max,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header
+      onTap: () {
+        FocusScope.of(context).unfocus();
+        FocusManager.instance.primaryFocus?.unfocus();
+      },
+      child: Scaffold(
+        key: scaffoldKey,
+        backgroundColor: AppColors.cream,
+        // Custom header (not a real AppBar) — without SafeArea it renders
+        // under the status bar, clipping the top of the page title.
+        body: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.max,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Header
               Container(
                 color: AppColors.cream,
                 child: Column(
@@ -435,29 +562,34 @@ class _DeafModeTranscriptionWidgetState
                   children: [
                     Padding(
                       padding: const EdgeInsetsDirectional.fromSTEB(
-                          AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                          18.0, AppSpacing.md, 18.0, 14.8),
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
+                          // Back button is rightmost in the Figma header
+                          // (node 46:1297) — first in this RTL Row so it
+                          // renders at the row's start (right), not the end.
                           a11yButton(
                             label: 'common.back'.tr(),
-                            child: FlutterFlowIconButton(
-                              borderRadius: 8.0,
-                              buttonSize: 48.0,
-                              fillColor: Colors.transparent,
-                              icon: appBackIcon(context),
-                              onPressed: () async {
-                                context.pop();
-                              },
+                            child: Container(
+                              width: 44.0,
+                              height: 44.0,
+                              decoration: BoxDecoration(
+                                color: AppColors.surface,
+                                borderRadius: BorderRadius.circular(14.0),
+                                border: Border.all(
+                                    color: AppColors.border, width: 0.8),
+                                boxShadow: EchoColors.shadow,
+                              ),
+                              child: IconButton(
+                                padding: EdgeInsets.zero,
+                                icon: appBackIcon(context,
+                                    color: AppColors.mutedOnCream, size: 20.0),
+                                onPressed: () => context.pop(),
+                              ),
                             ),
                           ),
-                          Expanded(
-                            child: Text(
-                              'deaf.title'.tr(),
-                              textAlign: TextAlign.start,
-                              style: AppText.title(),
-                            ),
-                          ),
+                          const SizedBox(width: AppSpacing.md),
                           // Communication/language support only.
                           if (StudentProfile.current.showsMessageAssistant)
                             a11yButton(
@@ -471,32 +603,23 @@ class _DeafModeTranscriptionWidgetState
                                 onPressed: _openMessageAssistant,
                               ),
                             ),
-                          a11yButton(
-                            label: 'deaf.savedTranscripts'.tr(),
-                            child: FlutterFlowIconButton(
-                              borderRadius: 8.0,
-                              buttonSize: 48.0,
-                              fillColor: Colors.transparent,
-                              icon: Icon(Icons.history_rounded,
-                                  color: AppColors.mutedOnCream, size: 24.0),
-                              onPressed: _openSaved,
+                          Expanded(
+                            child: Text(
+                              'deaf.title'.tr(),
+                              textAlign: TextAlign.start,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.custom(
+                                  fontSize: 19,
+                                  fontWeight: FontWeight.w800,
+                                  height: 1.45,
+                                  color: AppColors.onCream),
                             ),
                           ),
-                          a11yButton(
-                            label: 'common.settings'.tr(),
-                            child: FlutterFlowIconButton(
-                              borderRadius: 8.0,
-                              buttonSize: 48.0,
-                              fillColor: Colors.transparent,
-                              icon: Icon(Icons.settings_rounded,
-                                  color: AppColors.mutedOnCream, size: 24.0),
-                              onPressed: _showSettingsDialog,
-                            ),
-                          ),
-                        ].divide(const SizedBox(width: AppSpacing.sm)),
+                        ],
                       ),
                     ),
-                    Container(height: 1.0, color: AppColors.border),
+                    Container(height: 0.8, color: AppColors.border),
                   ],
                 ),
               ),
@@ -526,6 +649,7 @@ class _DeafModeTranscriptionWidgetState
                                   : AppColors.border,
                               width: 2.0,
                             ),
+                            boxShadow: EchoColors.shadow,
                           ),
                           child: Padding(
                             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -537,8 +661,11 @@ class _DeafModeTranscriptionWidgetState
                                 children: [
                                   Text(
                                     'deaf.sessionTitle'.tr(),
-                                    style:
-                                        AppText.label(color: AppColors.mutedOnCream),
+                                    style: AppText.custom(
+                                        fontSize: 12.5,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.4,
+                                        color: AppColors.mutedOnCream),
                                   ),
                                   const SizedBox(height: AppSpacing.md),
                                   a11yLive(_buildTranscriptText()),
@@ -579,82 +706,6 @@ class _DeafModeTranscriptionWidgetState
                           ),
                         ),
                       ],
-                      // Quiet auto-summary (moderate/intensive only) — sits
-                      // below the live transcript, never interrupts it.
-                      if (StudentProfile.current
-                          .isAtLeast(SupportLevel.moderate)) ...[
-                        const SizedBox(height: AppSpacing.sm),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            if (StudentProfile.current.isIntensive) ...[
-                              a11yButton(
-                                label: 'deaf.summarizeNow'.tr(),
-                                enabled: !_summarizingNow,
-                                child: TextButton.icon(
-                                  onPressed:
-                                      _summarizingNow ? null : _summarizeNow,
-                                  icon: _summarizingNow
-                                      ? SizedBox(
-                                          width: 14,
-                                          height: 14,
-                                          child: CircularProgressIndicator(
-                                              strokeWidth: 2,
-                                              color: AppColors.terracotta),
-                                        )
-                                      : Icon(Icons.bolt_rounded,
-                                          size: 16,
-                                          color: AppColors.terracotta),
-                                  label: Text('deaf.summarizeNow'.tr(),
-                                      style: AppText.label(
-                                          color: AppColors.terracotta)),
-                                ),
-                              ),
-                              const SizedBox(width: AppSpacing.sm),
-                            ],
-                            a11yButton(
-                              label: _autoSummary == null
-                                  ? 'deaf.noSummaryYet'.tr()
-                                  : (_summaryPanelExpanded
-                                      ? 'deaf.hideSummary'.tr()
-                                      : 'deaf.showSummary'.tr()),
-                              enabled: _autoSummary != null,
-                              child: TextButton.icon(
-                                onPressed: _autoSummary == null
-                                    ? null
-                                    : () => safeSetState(() =>
-                                        _summaryPanelExpanded =
-                                            !_summaryPanelExpanded),
-                                icon: Icon(
-                                  _summaryPanelExpanded
-                                      ? Icons.expand_less_rounded
-                                      : Icons.notes_rounded,
-                                  size: 16,
-                                  color: AppColors.mutedOnCream,
-                                ),
-                                label: Text(
-                                  _autoSummary == null
-                                      ? 'deaf.noSummaryYet'.tr()
-                                      : (_summaryPanelExpanded
-                                          ? 'deaf.hideSummary'.tr()
-                                          : 'deaf.showSummary'.tr()),
-                                  style: AppText.label(),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                        if (_summaryPanelExpanded && _autoSummary != null)
-                          Container(
-                            margin: const EdgeInsets.only(top: AppSpacing.xs),
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(AppSpacing.md),
-                            decoration: AppDecor.creamCard(),
-                            child: a11yLive(Text(_autoSummary!,
-                                textAlign: TextAlign.start,
-                                style: AppText.body())),
-                          ),
-                      ],
                     ],
                   ),
                 ),
@@ -670,149 +721,31 @@ class _DeafModeTranscriptionWidgetState
                   border: Border(top: BorderSide(color: AppColors.border)),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(
-                      AppSpacing.lg, AppSpacing.lg, AppSpacing.lg, AppSpacing.lg),
+                  padding: const EdgeInsets.fromLTRB(AppSpacing.lg,
+                      AppSpacing.lg, AppSpacing.lg, AppSpacing.lg),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      AnimatedBuilder(
-                        animation: _animController,
-                        builder: (context, _) => _buildWaveform(
-                            FFAppState().isRecording, _animController.value),
-                      ),
+                      if (_coursePickerPending) ...[
+                        _coursePickerCard(),
+                        const SizedBox(height: AppSpacing.lg),
+                      ],
+                      _primaryMicCard(recording),
                       const SizedBox(height: AppSpacing.lg),
-                      // Blinking record button — static (no pulse) for
-                      // neurodevelopmental support.
-                      AnimatedBuilder(
-                        animation: _animController,
-                        builder: (context, child) {
-                          final opacity = (FFAppState().isRecording &&
-                                  !StudentProfile.current.usesStaticAnimations)
-                              ? (0.5 +
-                                  0.5 *
-                                      (sin(_animController.value * 2 * pi +
-                                                  pi / 2) +
-                                              1) /
-                                          2)
-                              : 1.0;
-                          return Opacity(opacity: opacity, child: child);
-                        },
-                        child: a11yButton(
-                          label: recording
-                              ? 'deaf.stopRecording'.tr()
-                              : 'deaf.startRecording'.tr(),
-                          child: InkWell(
-                            splashColor: Colors.transparent,
-                            focusColor: Colors.transparent,
-                            hoverColor: Colors.transparent,
-                            highlightColor: Colors.transparent,
-                            onTap: () async {
-                              // Re-entrancy guard: ignore taps while a start/stop
-                              // transition is in flight, so the toggle can't fire
-                              // twice (which showed as an immediate stop).
-                              if (_recordBusy) return;
-                              _recordBusy = true;
-                              try {
-                                // Gate consent + mic permission BEFORE toggling
-                                // isRecording so the OS dialog can't interleave.
-                                if (!FFAppState().isRecording) {
-                                  if (!await ensureAiConsent(context)) return;
-                                  if (!await _ensureMicPermission()) return;
-                                }
-                                await actions.startRealtimeTranscription();
-                                // Start/stop the quiet auto-summary alongside
-                                // the recording it now tracks — never touches
-                                // the transcription itself either way.
-                                if (FFAppState().isRecording) {
-                                  _autoSummaryService.start(
-                                    latestText: () => _currentText,
-                                    onSummary: _onAutoSummary,
-                                  );
-                                } else {
-                                  _autoSummaryService.stop();
-                                }
-                                if (mounted) safeSetState(() {});
-                              } finally {
-                                _recordBusy = false;
-                              }
-                            },
-                            child: Container(
-                              width: 88.0,
-                              height: 88.0,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: (recording
-                                          ? AppColors.terracotta
-                                          : AppColors.navy)
-                                      .withValues(alpha: 0.2),
-                                  width: 4.0,
-                                ),
-                              ),
-                              alignment: Alignment.center,
-                              child: Container(
-                                width: 72.0,
-                                height: 72.0,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: recording
-                                      ? AppColors.terracotta
-                                      : AppColors.navy,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      blurRadius: 16.0,
-                                      color: (recording
-                                              ? AppColors.terracotta
-                                              : AppColors.navy)
-                                          .withValues(alpha: 0.27),
-                                      offset: const Offset(0.0, 8.0),
-                                    ),
-                                  ],
-                                ),
-                                alignment: Alignment.center,
-                                child: Icon(
-                                  recording
-                                      ? Icons.stop_rounded
-                                      : Icons.mic_rounded,
-                                  color: AppColors.onNavy,
-                                  size: 36.0,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        recording
-                            ? 'deaf.recordingInProgress'.tr()
-                            : 'deaf.pressToRecord'.tr(),
-                        style: AppText.title(
-                            color: recording
-                                ? AppColors.terracotta
-                                : AppColors.onCream),
-                      ),
-                      // Mild-cognitive support: permanent caption under the
-                      // primary action.
-                      if (StudentProfile.current.showsPermanentTooltips)
-                        permanentCaption('deaf.recordCaption'.tr()),
-                      const SizedBox(height: AppSpacing.lg),
-                      // Secondary actions — hidden behind "خيارات" for
-                      // neurodevelopmental / mild-cognitive support.
-                      CollapsibleSecondaryActions(
-                        hidden: StudentProfile.current.hidesSecondaryActions,
-                        secondary: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceAround,
-                          children: [
-                            _BottomButton(
-                              icon: Icons.save_alt_rounded,
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _BottomButton(
+                              icon: Icons.bookmark_border_rounded,
                               label: 'common.save'.tr(),
                               onPressed: _saveTranscript,
                             ),
-                            _BottomButton(
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: _BottomButton(
                               icon: Icons.delete_outline_rounded,
                               label: 'common.clear'.tr(),
-                              iconColor: AppColors.error,
                               onPressed: () {
                                 _model.liveText = '';
                                 FFAppState().update(() {
@@ -821,51 +754,247 @@ class _DeafModeTranscriptionWidgetState
                                 safeSetState(() {});
                               },
                             ),
-                            _BottomButton(
+                          ),
+                          const SizedBox(width: AppSpacing.sm),
+                          Expanded(
+                            child: _BottomButton(
                               icon: Icons.content_copy_rounded,
                               label: 'common.copy'.tr(),
                               onPressed: _copyTranscript,
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
                 ),
               ),
             ],
-            ),
           ),
         ),
-      );
+      ),
+    );
   }
 
   Widget _statusChip(bool recording) {
+    // Matches the Figma "متصل" pill exactly: soft surface capsule, border,
+    // text only — no protruding status dot. While actively recording there
+    // is no Figma reference for that state, so a small merged dot (soft,
+    // no separate border/shadow) is kept as the minimal live-status cue.
     return Container(
-      padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md, vertical: AppSpacing.sm),
+      padding: const EdgeInsets.symmetric(horizontal: 15.0, vertical: 8.0),
       decoration: BoxDecoration(
         color: AppColors.surface,
         borderRadius: BorderRadius.circular(AppSpacing.pill),
-        border: Border.all(color: AppColors.border),
+        border: Border.all(color: AppColors.border, width: 0.8),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Container(
-            width: 8.0,
-            height: 8.0,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: recording ? AppColors.terracotta : AppColors.navy,
+          if (recording) ...[
+            Container(
+              width: 6.0,
+              height: 6.0,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.terracotta,
+              ),
             ),
-          ),
-          const SizedBox(width: AppSpacing.sm),
+            const SizedBox(width: AppSpacing.sm),
+          ],
           Text(
             recording ? 'deaf.recording'.tr() : 'common.connected'.tr(),
-            style: AppText.label(color: AppColors.mutedOnCream),
+            style: AppText.custom(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                height: 1.0,
+                color: AppColors.mutedOnCream),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// "shwave" — 5 looping bars (heights 40/75/100/70/35%) above the mic
+/// button, purely decorative and always animating (except for
+/// neurodevelopmental support, which keeps every shape static). The middle
+/// bar is tinted terracotta, matching the single-accent rule used on the
+/// home screen's own wave bars.
+class _DeafWaveBars extends StatefulWidget {
+  const _DeafWaveBars({required this.animate});
+
+  final bool animate;
+
+  @override
+  State<_DeafWaveBars> createState() => _DeafWaveBarsState();
+}
+
+class _DeafWaveBarsState extends State<_DeafWaveBars>
+    with SingleTickerProviderStateMixin {
+  // Exact px heights + per-bar colors from the Figma file (node 46:1297,
+  // "Container" 386:97): short soft bars, not the tall ones this used to
+  // render — cream / cream / terracotta / cream / cream, fading at the
+  // outer two bars.
+  static const _heights = [10.449, 14.518, 14.126, 8.476, 4.429];
+  static const _maxBarHeight = 14.518;
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Color _barColor(int i) {
+    if (i == 2) return AppColors.terracotta;
+    if (i == 1 || i == 3) return EchoColors.primaryText;
+    return EchoColors.primaryText.withValues(alpha: 0.5);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: _maxBarHeight,
+      child: AnimatedBuilder(
+        animation: _controller,
+        builder: (context, _) {
+          return Row(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: List.generate(_heights.length, (i) {
+              final phase = i * 0.14;
+              var scale = 1.0;
+              if (widget.animate) {
+                final wave =
+                    0.5 + 0.5 * sin(2 * pi * (_controller.value + phase));
+                scale = 0.35 + 0.65 * wave;
+              }
+              return Padding(
+                padding: EdgeInsetsDirectional.only(start: i == 0 ? 0.0 : 4.0),
+                child: Container(
+                  width: 4.0,
+                  height: _heights[i] * scale,
+                  decoration: BoxDecoration(
+                    color: _barColor(i),
+                    borderRadius: BorderRadius.circular(2.2),
+                  ),
+                ),
+              );
+            }),
+          );
+        },
+      ),
+    );
+  }
+}
+
+/// The mic control button itself: [EchoColors.micBg]/[EchoColors.micGlyph]
+/// circle with [EchoColors.micShadow], plus a terracotta "shpulse" ring
+/// behind it while actively recording (suppressed for neurodevelopmental
+/// support via [animate]).
+class _MicButton extends StatefulWidget {
+  const _MicButton({
+    required this.recording,
+    required this.animate,
+    required this.label,
+    required this.onTap,
+  });
+
+  final bool recording;
+  final bool animate;
+  final String label;
+  final Future<void> Function() onTap;
+
+  @override
+  State<_MicButton> createState() => _MicButtonState();
+}
+
+class _MicButtonState extends State<_MicButton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1450),
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final showPulse = widget.recording && widget.animate;
+    return a11yButton(
+      label: widget.label,
+      child: InkWell(
+        customBorder: const CircleBorder(),
+        splashColor: Colors.transparent,
+        focusColor: Colors.transparent,
+        hoverColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+        onTap: widget.onTap,
+        child: SizedBox(
+          width: 132.0,
+          height: 132.0,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              if (showPulse)
+                AnimatedBuilder(
+                  animation: _controller,
+                  builder: (context, _) {
+                    final t = _controller.value;
+                    return Opacity(
+                      opacity: ((1.0 - t) * 0.45).clamp(0.0, 0.45),
+                      child: Transform.scale(
+                        scale: 1.0 + 0.35 * t,
+                        child: Container(
+                          width: 104.0,
+                          height: 104.0,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.terracotta,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              Container(
+                width: 104.0,
+                height: 104.0,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: EchoColors.micBg,
+                  boxShadow: EchoColors.micShadow,
+                ),
+                alignment: Alignment.center,
+                child: Icon(
+                  widget.recording ? Icons.stop_rounded : Icons.mic_rounded,
+                  color: EchoColors.micGlyph,
+                  size: 38.0,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -945,8 +1074,7 @@ class _TermDefinitionSheetState extends State<_TermDefinitionSheet> {
               Padding(
                 padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
                 child: Center(
-                  child:
-                      CircularProgressIndicator(color: AppColors.terracotta),
+                  child: CircularProgressIndicator(color: AppColors.terracotta),
                 ),
               )
             else
@@ -968,8 +1096,7 @@ class _MessageAssistantSheet extends StatefulWidget {
   const _MessageAssistantSheet();
 
   @override
-  State<_MessageAssistantSheet> createState() =>
-      _MessageAssistantSheetState();
+  State<_MessageAssistantSheet> createState() => _MessageAssistantSheetState();
 }
 
 class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
@@ -1073,7 +1200,8 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                   foregroundColor: AppColors.onNavy,
                   minimumSize: const Size.fromHeight(AppSpacing.minTap),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(AppSpacing.cardRadius)),
+                      borderRadius:
+                          BorderRadius.circular(AppSpacing.cardRadius)),
                 ),
                 onPressed: _loading ? null : _generate,
                 child: _loading
@@ -1119,7 +1247,8 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
                           icon: Icon(Icons.content_copy_rounded,
                               size: 16, color: AppColors.terracotta),
                           label: Text('deaf.copyMessage'.tr(),
-                              style: AppText.label(color: AppColors.terracotta)),
+                              style:
+                                  AppText.label(color: AppColors.terracotta)),
                         ),
                       ),
                     ],
@@ -1134,37 +1263,46 @@ class _MessageAssistantSheetState extends State<_MessageAssistantSheet> {
   }
 }
 
+/// One of the three equal-width action cards under the mic card — matches
+/// the Figma spec exactly: a soft cream card (not a bare circle+caption),
+/// height 52, icon above a 13px label, both centered.
 class _BottomButton extends StatelessWidget {
   const _BottomButton({
     required this.icon,
     required this.label,
     required this.onPressed,
-    this.iconColor,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onPressed;
-  final Color? iconColor;
 
   @override
   Widget build(BuildContext context) {
     return a11yButton(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          FlutterFlowIconButton(
-            borderRadius: 24.0,
-            buttonSize: 48.0,
-            fillColor: AppColors.cream,
-            borderColor: AppColors.border,
-            borderWidth: 1.0,
-            icon: Icon(icon, color: iconColor ?? AppColors.navy, size: 24.0),
-            onPressed: onPressed,
+      child: Material(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(16.0),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16.0),
+          onTap: onPressed,
+          child: Container(
+            height: 52.0,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16.0),
+              border: Border.all(color: AppColors.border, width: 0.8),
+            ),
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(icon, color: AppColors.mutedOnCream, size: 18.0),
+                const SizedBox(height: 4.0),
+                Text(label, style: AppText.label(color: AppColors.mutedOnCream)),
+              ],
+            ),
           ),
-          const SizedBox(height: 6.0),
-          Text(label, style: AppText.label(color: AppColors.mutedOnCream)),
-        ],
+        ),
       ),
     );
   }

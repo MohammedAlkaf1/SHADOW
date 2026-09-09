@@ -107,6 +107,8 @@ dependencies:
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.0
+  string_similarity: ^2.2.0
+  audioplayers: ^6.7.1
 
 dependency_overrides:
   http: 1.4.0
@@ -129,9 +131,11 @@ dev_dependencies:
   flutter_launcher_icons: ^0.14.1
   flutter_secure_storage_platform_interface: ^2.0.3
 
-# Launcher-icon generation. Source: assets/icon/app_icon.png (the designed
-# master icon — navy gradient field + terracotta/cream mark), replacing the
-# earlier programmatically-generated "ش" glyph icon.
+# Launcher-icon generation. Source: assets/icon/app_icon.png — navy gradient
+# field + the approved orange-gradient fingerprint/soundwave mark (same mark
+# used in the in-app header, see shadow_wordmark_icon.png), composited via
+# tool/icon_gen/generate_new_icon.dart. Replaces the earlier squiggle+bars
+# mark, which itself replaced an even earlier "ش" glyph icon.
 flutter_launcher_icons:
   android: true
   ios: false
@@ -162,6 +166,7 @@ flutter:
     - assets/jsons/
     - assets/translations/
     - assets/icon/app_icon.png
+    - assets/icon/shadow_wordmark_icon.png
 
 
 

@@ -6,15 +6,22 @@ import 'package:flutter/foundation.dart';
 import 'package:record/record.dart';
 import 'package:web_socket_channel/io.dart';
 
+import '/data/technical_terms_dictionary.dart';
 import '/services/app_prefs.dart';
 import '/services/deepgram_parser.dart';
 
 const String _apiKey = String.fromEnvironment('DEEPGRAM_API_KEY');
 
+/// Picks Arabic or English for an on-screen status/error string based on the
+/// student's app-language setting — this file has no BuildContext to read
+/// via easy_localization's `.tr()`, same reasoning as PlatformClient._bi.
+String _bi(String ar, String en) => AppPrefs.currentAppLanguage == 'en' ? en : ar;
+
 AudioRecorder? _recorder;
 IOWebSocketChannel? _channel;
 bool _shouldRestart = false;
 void Function(String)? _onTranscript;
+List<String> _courseKeyterms = const [];
 final TranscriptAccumulator _accumulator = TranscriptAccumulator();
 int _sentChunkCount = 0;
 
@@ -29,12 +36,21 @@ void _forwardAudio(Uint8List data) {
   }
 }
 
+/// [courseKeyterms] are the calling course's approved lecture keyterms (see
+/// PlatformClient.getCourseKeyterms) — merged with the generic
+/// technicalTermsDictionary vocabulary and sent to Deepgram as `keyterm`
+/// boost params for this whole session. Empty when no course is selected or
+/// the course has no keyterms yet — degrades to the generic list alone,
+/// never blocks starting a transcription session (see
+/// buildDeepgramKeytermsWithCoursePriority's doc comment).
 Future<void> startPlatformTranscription(
-    void Function(String text) onTranscript) async {
+    void Function(String text) onTranscript,
+    {List<String> courseKeyterms = const []}) async {
   _onTranscript = onTranscript;
   _shouldRestart = true;
   _accumulator.clear();
   _sentChunkCount = 0;
+  _courseKeyterms = courseKeyterms;
 
   debugPrint('🔑 Key exists: ${_apiKey.isNotEmpty}');
   if (_apiKey.isNotEmpty) {
@@ -43,7 +59,7 @@ Future<void> startPlatformTranscription(
 
   if (_apiKey.isEmpty) {
     debugPrint('❌ Error: DEEPGRAM_API_KEY is empty — pass --dart-define=DEEPGRAM_API_KEY=...');
-    onTranscript('⚠️ مفتاح Deepgram غير موجود');
+    onTranscript(_bi('⚠️ مفتاح Deepgram غير موجود', '⚠️ Deepgram key is missing'));
     return;
   }
 
@@ -64,7 +80,7 @@ Future<void> _startDeepgramStream() async {
   final hasPermission = await _recorder!.hasPermission();
   debugPrint('🎤 Mic permission: $hasPermission');
   if (!hasPermission) {
-    _onTranscript?.call('يرجى منح إذن الميكروفون');
+    _onTranscript?.call(_bi('يرجى منح إذن الميكروفون', 'Please grant microphone permission'));
     return;
   }
 
@@ -74,17 +90,40 @@ Future<void> _startDeepgramStream() async {
   debugPrint('🌐 Deepgram language=$deepgramLanguage '
       '(app language=${AppPrefs.currentAppLanguage})');
 
-  final uri = Uri.parse(
-    'wss://api.deepgram.com/v1/listen'
-    '?encoding=linear16&sample_rate=16000&channels=1'
-    // model=nova-3: nova-2 rejected language=ar with HTTP 400 (Bad Request).
-    // nova-3 is Deepgram's current multilingual model. If "ar" is still
-    // rejected, the onError/onDone logs below print Deepgram's exact reason —
-    // then try language=multi (also suits Arabic+English code-switching).
-    '&language=$deepgramLanguage&model=nova-3&smart_format=true&interim_results=true',
+  // Repeated `keyterm` params (one per term) — Deepgram's documented format
+  // for real-time Keyterm Prompting (developers.deepgram.com/docs/keyterm):
+  // "repeat the keyterm parameter so each keyterm is processed individually".
+  // A single comma/semicolon-joined value is silently accepted as one long
+  // literal term and boosts nothing — see deepgramKeytermList's doc comment
+  // for the word-budget cap. Uri's Map<String, List<String>> queryParameters
+  // handles the repetition (and correct percent-encoding of Latin-script
+  // multi-word terms) automatically; no manual string-joining involved.
+  final keyterms = buildDeepgramKeytermsWithCoursePriority(_courseKeyterms);
+  final uri = Uri(
+    scheme: 'wss',
+    host: 'api.deepgram.com',
+    path: '/v1/listen',
+    queryParameters: {
+      'encoding': 'linear16',
+      'sample_rate': '16000',
+      'channels': '1',
+      // model=nova-3: nova-2 rejected language=ar with HTTP 400 (Bad
+      // Request). nova-3 is Deepgram's current multilingual model and the
+      // one Keyterm Prompting supports. If "ar" is still rejected, the
+      // onError/onDone logs below print Deepgram's exact reason — then try
+      // language=multi (also suits Arabic+English code-switching).
+      'language': deepgramLanguage,
+      'model': 'nova-3',
+      'smart_format': 'true',
+      'interim_results': 'true',
+      if (keyterms.isNotEmpty) 'keyterm': keyterms,
+    },
   );
 
   debugPrint('🔌 WebSocket connecting to: ${uri.host}');
+  debugPrint('🔑 keyterm count: ${keyterms.length} '
+      '(first 5: ${keyterms.take(5).join(", ")})');
+  debugPrint('🔑 full query: ${uri.query}');
   // Auth via the Authorization header (Deepgram's supported method). The
   // previous ?token= query parameter is NOT honoured by /v1/listen and caused
   // a 401 at the handshake.
@@ -179,7 +218,7 @@ Future<void> _startDeepgramStream() async {
       );
     } catch (e2) {
       debugPrint('❌ AAC fallback also failed: $e2');
-      _onTranscript?.call('خطأ في بدء التسجيل: $e2');
+      _onTranscript?.call(_bi('خطأ في بدء التسجيل: $e2', 'Error starting recording: $e2'));
     }
   }
 }

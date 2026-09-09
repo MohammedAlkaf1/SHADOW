@@ -7,6 +7,7 @@
 //   - images / PDF text -> Google Gemini (description, simplification)
 // The lecturer whose voice is captured is also a data subject.
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 
 import '/a11y.dart';
@@ -51,7 +52,7 @@ class ConsentScreen extends StatelessWidget {
                 Expanded(
                   child: SingleChildScrollView(
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: AppSpacing.sm),
                         Container(
@@ -68,33 +69,27 @@ class ConsentScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
-                          'الخصوصية والموافقة',
-                          textAlign: TextAlign.end,
+                          'consent.title'.tr(),
+                          textAlign: TextAlign.start,
                           style: AppText.display(),
                         ),
                         const SizedBox(height: AppSpacing.md),
                         Text(
-                          'تستخدم بعض ميزات شادو خدمات خارجية (أطراف ثالثة) لتشغيل الذكاء الاصطناعي:',
-                          textAlign: TextAlign.end,
+                          'consent.intro'.tr(),
+                          textAlign: TextAlign.start,
                           style: AppText.body(),
                         ),
                         const SizedBox(height: AppSpacing.sm),
-                        _bullet(
-                            'صوت المحاضرة يُرسل إلى خدمة Deepgram لتحويله إلى نص.'),
-                        _bullet(
-                            'الصور ونصوص ملفات PDF تُرسل إلى خدمة Google Gemini لوصفها وتبسيطها.'),
+                        _bullet('consent.bulletDeepgram'.tr()),
+                        _bullet('consent.bulletGemini'.tr()),
                         const SizedBox(height: AppSpacing.md),
-                        _note(
-                          'قد يلتقط تسجيل الصوت صوت المُحاضِر، وهو أيضاً شخص معنيّ بحماية بياناته. استخدم الميزة بما يحترم خصوصيته.',
-                        ),
+                        _note('consent.noteLecturer'.tr()),
                         const SizedBox(height: AppSpacing.sm),
-                        _note(
-                          'لا تُرسل أي بيانات طبية أو سجلات إعاقة إلى هذه الخدمات، ولا يُرسل سوى ما تختاره أنت من صوت أو صور أو ملفات.',
-                        ),
+                        _note('consent.noteNoMedical'.tr()),
                         const SizedBox(height: AppSpacing.sm),
                         Text(
-                          'إذا لم توافق، تبقى ميزات الذكاء الاصطناعي متوقفة ويمكنك تفعيلها لاحقاً.',
-                          textAlign: TextAlign.end,
+                          'consent.declineHint'.tr(),
+                          textAlign: TextAlign.start,
                           style: AppText.label(),
                         ),
                       ],
@@ -103,7 +98,7 @@ class ConsentScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: AppSpacing.md),
                 a11yButton(
-                  label: 'أوافق وأتابع',
+                  label: 'consent.agree'.tr(),
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: AppColors.navy,
@@ -117,13 +112,13 @@ class ConsentScreen extends StatelessWidget {
                       await AppPrefs.setAiConsent(true);
                       if (context.mounted) Navigator.of(context).pop(true);
                     },
-                    child: Text('أوافق وأتابع',
+                    child: Text('consent.agree'.tr(),
                         style: AppText.button(color: AppColors.onNavy)),
                   ),
                 ),
                 const SizedBox(height: AppSpacing.sm),
                 a11yButton(
-                  label: 'لا أوافق، تبقى ميزات الذكاء الاصطناعي متوقفة',
+                  label: 'consent.declineLabel'.tr(),
                   child: OutlinedButton(
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.onCream,
@@ -137,7 +132,7 @@ class ConsentScreen extends StatelessWidget {
                       await AppPrefs.setAiConsent(false);
                       if (context.mounted) Navigator.of(context).pop(false);
                     },
-                    child: Text('لا أوافق',
+                    child: Text('consent.declineButton'.tr(),
                         style: AppText.button(color: AppColors.onCream)),
                   ),
                 ),
@@ -162,7 +157,7 @@ class ConsentScreen extends StatelessWidget {
           ),
           const SizedBox(width: AppSpacing.sm),
           Expanded(
-            child: Text(text, textAlign: TextAlign.end, style: AppText.body()),
+            child: Text(text, textAlign: TextAlign.start, style: AppText.body()),
           ),
         ],
       ),
@@ -179,7 +174,7 @@ class ConsentScreen extends StatelessWidget {
         border: Border.all(color: AppColors.border),
       ),
       child: Text(text,
-          textAlign: TextAlign.end,
+          textAlign: TextAlign.start,
           style: AppText.body(color: AppColors.mutedOnCream)),
     );
   }

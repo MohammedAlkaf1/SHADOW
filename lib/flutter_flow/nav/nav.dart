@@ -79,11 +79,6 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, params) => WelcomeSelectionWidget(),
         ),
         FFRoute(
-          name: DevToolsPage.routeName,
-          path: DevToolsPage.routePath,
-          builder: (context, params) => const DevToolsPage(),
-        ),
-        FFRoute(
           name: SettingsScreen.routeName,
           path: SettingsScreen.routePath,
           builder: (context, params) => const SettingsScreen(),

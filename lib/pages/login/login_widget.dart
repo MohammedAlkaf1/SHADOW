@@ -8,12 +8,14 @@
 
 import 'dart:ui' as ui;
 
+import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '/a11y.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/index.dart';
+import '/services/app_prefs.dart';
 import '/services/platform_client.dart';
 import '/student/student_profile_provider.dart';
 import '/theme.dart';
@@ -36,6 +38,30 @@ class _LoginWidgetState extends State<LoginWidget> {
   bool _rememberMe = true;
 
   @override
+  void initState() {
+    super.initState();
+    _prefillSavedCredentials();
+  }
+
+  /// If "تذكرني" was checked on a previous login, repopulate the form from
+  /// the saved (secure-storage-backed) email/password so the student doesn't
+  /// have to retype them. Independent of PlatformClient.tryRestoreSession()
+  /// (the splash screen's refresh-token path) — that skips this screen
+  /// entirely when it succeeds, so this only ever runs when the student is
+  /// actually looking at the login form (no valid session to silently
+  /// restore, or the token expired/was revoked).
+  Future<void> _prefillSavedCredentials() async {
+    final saved = await AppPrefs.getSavedCredentials();
+    if (saved == null || !mounted) return;
+    final (email, password) = saved;
+    setState(() {
+      _emailController.text = email;
+      _passwordController.text = password;
+      _rememberMe = true;
+    });
+  }
+
+  @override
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
@@ -46,7 +72,7 @@ class _LoginWidgetState extends State<LoginWidget> {
     final email = _emailController.text.trim();
     final password = _passwordController.text;
     if (email.isEmpty || password.isEmpty) {
-      setState(() => _error = 'الرجاء إدخال البريد الإلكتروني وكلمة المرور');
+      setState(() => _error = 'login.missingFields'.tr());
       return;
     }
 
@@ -70,6 +96,14 @@ class _LoginWidgetState extends State<LoginWidget> {
       return;
     }
 
+    // "تذكرني": save the raw credentials for form-prefill next time, or
+    // clear anything previously saved if the student just unchecked it.
+    if (_rememberMe) {
+      await AppPrefs.saveCredentials(email, password);
+    } else {
+      await AppPrefs.clearSavedCredentials();
+    }
+
     // Hydrate the student profile/directives right away so the mode
     // selection screen has accurate gating from the first frame. A failure
     // here still lets the student in — getStudentProfile() itself falls
@@ -91,109 +125,109 @@ class _LoginWidgetState extends State<LoginWidget> {
 
   @override
   Widget build(BuildContext context) {
-    return Directionality(
-      textDirection: ui.TextDirection.rtl,
-      child: Scaffold(
-        backgroundColor: AppColors.cream,
-        body: SafeArea(
-          child: Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Center(
-                    child: Image.asset(
-                      'assets/icon/app_icon.png',
-                      width: 72.0,
-                      height: 72.0,
-                    ),
+    // Ambient Directionality follows context.locale (see main.dart) — no
+    // hardcoded wrapper here, so this screen correctly mirrors to LTR for
+    // English rather than always forcing RTL.
+    return Scaffold(
+      backgroundColor: AppColors.cream,
+      body: SafeArea(
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(AppSpacing.lg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Center(
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    width: 72.0,
+                    height: 72.0,
                   ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    'تسجيل الدخول',
-                    textAlign: TextAlign.center,
-                    style: AppText.title(color: AppColors.onCream),
-                  ),
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    'سجّل الدخول بحساب منصة شادو الخاص بك',
-                    textAlign: TextAlign.center,
-                    style: AppText.label(),
-                  ),
-                  const SizedBox(height: AppSpacing.xl),
-                  _field(
-                    label: 'البريد الإلكتروني',
-                    controller: _emailController,
-                    keyboardType: TextInputType.emailAddress,
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  _field(
-                    label: 'كلمة المرور',
-                    controller: _passwordController,
-                    obscureText: true,
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  a11yButton(
-                    label: 'تذكرني',
-                    child: InkWell(
-                      onTap: () =>
-                          setState(() => _rememberMe = !_rememberMe),
-                      child: Padding(
-                        padding:
-                            const EdgeInsets.symmetric(vertical: AppSpacing.xs),
-                        child: Row(
-                          children: [
-                            Checkbox(
-                              value: _rememberMe,
-                              activeColor: AppColors.terracotta,
-                              onChanged: (value) =>
-                                  setState(() => _rememberMe = value ?? true),
-                            ),
-                            Text('تذكرني', style: AppText.body()),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                  if (_error != null) ...[
-                    const SizedBox(height: AppSpacing.md),
-                    Text(
-                      _error!,
-                      textAlign: TextAlign.center,
-                      style: AppText.label(color: AppColors.terracotta),
-                    ),
-                  ],
-                  const SizedBox(height: AppSpacing.lg),
-                  a11yButton(
-                    label: 'تسجيل الدخول',
-                    child: SizedBox(
-                      height: AppSpacing.minTap,
-                      child: ElevatedButton(
-                        onPressed: _loading ? null : _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.terracotta,
-                          shape: RoundedRectangleBorder(
-                            borderRadius:
-                                BorderRadius.circular(AppSpacing.pill),
+                ),
+                const SizedBox(height: AppSpacing.lg),
+                Text(
+                  'login.title'.tr(),
+                  textAlign: TextAlign.center,
+                  style: AppText.title(color: AppColors.onCream),
+                ),
+                const SizedBox(height: AppSpacing.xs),
+                Text(
+                  'login.subtitle'.tr(),
+                  textAlign: TextAlign.center,
+                  style: AppText.label(),
+                ),
+                const SizedBox(height: AppSpacing.xl),
+                _field(
+                  label: 'login.emailLabel'.tr(),
+                  controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _field(
+                  label: 'login.passwordLabel'.tr(),
+                  controller: _passwordController,
+                  obscureText: true,
+                ),
+                const SizedBox(height: AppSpacing.sm),
+                a11yButton(
+                  label: 'login.rememberMe'.tr(),
+                  child: InkWell(
+                    onTap: () =>
+                        setState(() => _rememberMe = !_rememberMe),
+                    child: Padding(
+                      padding:
+                          const EdgeInsets.symmetric(vertical: AppSpacing.xs),
+                      child: Row(
+                        children: [
+                          Checkbox(
+                            value: _rememberMe,
+                            activeColor: AppColors.terracotta,
+                            onChanged: (value) =>
+                                setState(() => _rememberMe = value ?? true),
                           ),
-                        ),
-                        child: _loading
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2.5,
-                                  color: Colors.white,
-                                ),
-                              )
-                            : Text('دخول', style: AppText.button()),
+                          Text('login.rememberMe'.tr(), style: AppText.body()),
+                        ],
                       ),
                     ),
+                  ),
+                ),
+                if (_error != null) ...[
+                  const SizedBox(height: AppSpacing.md),
+                  Text(
+                    _error!,
+                    textAlign: TextAlign.center,
+                    style: AppText.label(color: AppColors.terracotta),
                   ),
                 ],
-              ),
+                const SizedBox(height: AppSpacing.lg),
+                a11yButton(
+                  label: 'login.submit'.tr(),
+                  child: SizedBox(
+                    height: AppSpacing.minTap,
+                    child: ElevatedButton(
+                      onPressed: _loading ? null : _submit,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.terracotta,
+                        shape: RoundedRectangleBorder(
+                          borderRadius:
+                              BorderRadius.circular(AppSpacing.pill),
+                        ),
+                      ),
+                      child: _loading
+                          ? const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text('login.submit'.tr(), style: AppText.button()),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
         ),

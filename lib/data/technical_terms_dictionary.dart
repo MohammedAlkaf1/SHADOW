@@ -104,6 +104,11 @@ const Map<String, String> technicalTermsDictionary = {
   'البروتوكول': 'Protocol',
   'الانكربشن': 'Encryption',
   'الاوثنتكيشن': 'Authentication',
+  // Observed on-device: Deepgram rendered "Authentication" this way in a
+  // real course-keyterm-boosted session — boosting raises the odds of
+  // hearing the term at all, but doesn't stabilize *which* phonetic
+  // spelling comes out, so this is a second real variant, not a guess.
+  'اتيتيكيشن': 'Authentication',
   'الاوثورايزيشن': 'Authorization',
   'الفايروول': 'Firewall',
   'الفيرتشوال مشين': 'Virtual Machine',
@@ -381,3 +386,118 @@ const Map<String, String> technicalTermsDictionary = {
   'الفورمات': 'Format',
   'التمبليت': 'Template',
 };
+
+/// Deduplicated English terms from [technicalTermsDictionary] (order of
+/// first appearance), for Deepgram's `keyterm` real-time-prompting
+/// parameter — see transcription_mobile.dart's Deepgram URL construction.
+/// This *boosts Deepgram's own recognition* of these terms as they're
+/// spoken, on top of (not instead of) correctTechnicalTerms()'s post-hoc
+/// text correction — the two are complementary: keyterm prompting helps
+/// Deepgram hear "Machine Learning" correctly in the first place; the
+/// corrector still catches phonetic misspellings it produces anyway.
+///
+/// Deepgram's *documented* limit (developers.deepgram.com/docs/keyterm) is
+/// 500 tokens total across all `keyterm` params. That number turned out not
+/// to be the real, binding constraint, and neither did two other proxies
+/// for it, tried in order as each one failed to generalize:
+/// - Raw TERM COUNT: 64 short generic terms (~74 words) connected fine, but
+///   64 terms mixing in longer course-style phrases like "Byzantine Fault
+///   Tolerance" (~83 words for the same *count* of 64) was rejected — count
+///   alone doesn't track it.
+/// - WORD COUNT: 88 words of pure short generic terms (69 terms) was
+///   REJECTED, while 88 words mixing course-style phrases (61 terms) was
+///   ACCEPTED — same word count, opposite outcomes, so word count alone
+///   doesn't track it either.
+/// - QUERY STRING LENGTH (this one): the one metric that held up across
+///   every mix tried. This is the actual physical quantity a URL-length
+///   limit would be checking — plausible given the failure is an HTTP 400
+///   at the WebSocket handshake, not a semantic "too many boost terms"
+///   rejection.
+///
+/// This number is the result of three full rounds of real binary search
+/// against the live Deepgram API with a real key (the two failed proxies
+/// above each cost their own binary search before being ruled out; this
+/// round: 13 connection attempts, bounds check at 800/3000 chars, binary
+/// search narrowing 1900→1350→1075→1213→1282→1248→1265→1257), landing on
+/// **an encoded query string of 1243 chars succeeding, 1257 chars failing**,
+/// independently reconfirmed 3 consecutive times before being accepted.
+/// [kMaxSafeKeytermQueryChars] is set a little under that tested boundary
+/// (not at it) specifically because the terms tested here were all
+/// plain-English/ASCII; a real course's own keyterms could contain
+/// characters (Arabic, accented Latin, punctuation) that percent-encode to
+/// more bytes per character than the ASCII terms this was measured with —
+/// the margin exists for that, not because the tested boundary itself is
+/// treated as unreliable.
+///
+/// If Deepgram's own limits change in the future, re-run that same
+/// mixed-term-shape, character-length binary-search procedure rather than
+/// adjusting this number by feel — a term-count-only or word-count-only
+/// re-test would silently reintroduce the same gap that broke the first two
+/// rounds.
+const int kMaxSafeKeytermQueryChars = 1200;
+
+/// The generic, subject-agnostic term list used when there's no
+/// course-specific list to combine it with — capped at
+/// [kMaxSafeKeytermQueryChars] worth of encoded `&keyterm=...` params. See
+/// [buildDeepgramKeytermsWithCoursePriority] for the combined form used by
+/// deaf-mode transcription (course keyterms + this list, sharing one
+/// overall budget).
+final List<String> deepgramKeytermList = _capByQueryChars(
+    technicalTermsDictionary.values, kMaxSafeKeytermQueryChars);
+
+/// Caps [terms] by the total encoded length of the `&keyterm=...` params
+/// they'd contribute to a Deepgram query string, not by term count or word
+/// count (see [kMaxSafeKeytermQueryChars]'s doc comment for why). A term
+/// that doesn't fit is skipped rather than stopping the whole pass, so a
+/// shorter term later in [terms] can still fit in whatever budget remains —
+/// this matters because course-specific terms (checked first by
+/// [buildDeepgramKeytermsWithCoursePriority]) can be long phrases that
+/// leave an odd amount of remaining budget for the generic dictionary fill.
+List<String> _capByQueryChars(Iterable<String> terms, int charBudget,
+    {Set<String>? seen}) {
+  seen ??= <String>{};
+  final result = <String>[];
+  var used = 0;
+  for (final term in terms) {
+    if (!seen.add(term)) continue;
+    final paramLength = '&keyterm=${Uri.encodeQueryComponent(term)}'.length;
+    if (used + paramLength > charBudget) continue;
+    used += paramLength;
+    result.add(term);
+  }
+  return result;
+}
+
+/// Combines a course's own approved lecture keyterms (fetched from
+/// GET /courses/:courseCode/keyterms — see PlatformClient.getCourseKeyterms)
+/// with the generic cross-subject [technicalTermsDictionary] vocabulary,
+/// under one shared [kMaxSafeKeytermQueryChars] character budget.
+/// Course-specific terms go first — they came from the actual lecture's
+/// slides, so they're more valuable signal than the generic list — then
+/// whatever budget remains (possibly zero) is filled with generic terms not
+/// already covered. If the course's own keyterms alone already exhaust the
+/// budget, the generic dictionary is skipped entirely for that session
+/// (never silently mixed in over the tested-safe limit). An empty
+/// [courseKeyterms] (no course selected, or the course has none yet)
+/// degrades gracefully to exactly [deepgramKeytermList].
+///
+/// The result is also the final safety net before a request ever reaches
+/// Deepgram: regardless of how course/generic terms are apportioned, the
+/// returned list's total encoded query length can never exceed
+/// [kMaxSafeKeytermQueryChars], so callers don't need their own separate
+/// truncation step.
+List<String> buildDeepgramKeytermsWithCoursePriority(
+    List<String> courseKeyterms) {
+  if (courseKeyterms.isEmpty) return deepgramKeytermList;
+  final seen = <String>{};
+  final combined =
+      _capByQueryChars(courseKeyterms, kMaxSafeKeytermQueryChars, seen: seen);
+  final usedChars = combined.fold<int>(0,
+      (sum, t) => sum + '&keyterm=${Uri.encodeQueryComponent(t)}'.length);
+  if (usedChars < kMaxSafeKeytermQueryChars) {
+    combined.addAll(_capByQueryChars(technicalTermsDictionary.values,
+        kMaxSafeKeytermQueryChars - usedChars,
+        seen: seen));
+  }
+  return combined;
+}

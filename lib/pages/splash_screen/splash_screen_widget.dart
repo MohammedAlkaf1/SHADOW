@@ -1,3 +1,4 @@
+import 'package:easy_localization/easy_localization.dart';
 import 'package:provider/provider.dart';
 
 import '/flutter_flow/flutter_flow_util.dart';
@@ -63,11 +64,16 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Image.asset(
-              'assets/icon/app_icon.png',
-              width: 100.0,
-              height: 100.0,
+              'assets/icon/shadow_wordmark_icon.png',
+              width: 120.0,
+              height: 120.0,
+              fit: BoxFit.contain,
             ),
             const SizedBox(height: AppSpacing.lg),
+            // The "شادو" / "Shadow" pair is a fixed bilingual brand lockup
+            // (same as the home header's logo+wordmark) — not translated
+            // content, so it stays literal regardless of locale. Only the
+            // tagline below actually localizes.
             Text(
               'شادو',
               style: AppText.custom(
@@ -91,7 +97,7 @@ class _SplashScreenWidgetState extends State<SplashScreenWidget> {
             ),
             const SizedBox(height: 14.0),
             Text(
-              'مرافقك الأكاديمي الذكي',
+              'app.tagline'.tr(),
               style: AppText.custom(
                 fontSize: 17.0,
                 fontWeight: FontWeight.w500,

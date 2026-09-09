@@ -126,7 +126,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     return MaterialApp.router(
       key: ValueKey(brightness),
       debugShowCheckedModeBanner: false,
-      title: 'شادو',
+      // OS task-switcher label — not visible in-app UI, but still worth
+      // following the active locale rather than being hardcoded Arabic.
+      title: context.locale.languageCode == 'ar' ? 'شادو' : 'Shadow',
       // From easy_localization: the Global*Localizations delegates plus its
       // own delegate that loads assets/translations/*.json for .tr().
       localizationsDelegates: context.localizationDelegates,

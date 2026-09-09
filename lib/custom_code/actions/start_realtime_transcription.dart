@@ -10,7 +10,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'transcription_platform.dart';
 
-Future<void> startRealtimeTranscription() async {
+Future<void> startRealtimeTranscription({
+  List<String> courseKeyterms = const [],
+}) async {
   const key = String.fromEnvironment('DEEPGRAM_API_KEY');
   debugPrint('🔑 Key exists: ${key.isNotEmpty}');
 
@@ -26,11 +28,14 @@ Future<void> startRealtimeTranscription() async {
       FFAppState().isRecording = true;
     });
 
-    await startPlatformTranscription((String text) {
-      debugPrint('💾 State updated: $text');
-      FFAppState().update(() {
-        FFAppState().liveText = text;
-      });
-    });
+    await startPlatformTranscription(
+      (String text) {
+        debugPrint('💾 State updated: $text');
+        FFAppState().update(() {
+          FFAppState().liveText = text;
+        });
+      },
+      courseKeyterms: courseKeyterms,
+    );
   }
 }

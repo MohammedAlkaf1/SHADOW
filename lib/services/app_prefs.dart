@@ -131,7 +131,71 @@ class AppPrefs {
   // anywhere, at any point, under any setting.
 
   static const _kRefreshToken = 'platform_refresh_token';
-  static const _secureStorage = FlutterSecureStorage();
+  // encryptedSharedPreferences avoids a class of Android Keystore failures
+  // seen on some OEM ROMs / local debug runs (a corrupted or reset Keystore
+  // makes the plugin's default backend throw on read); EncryptedSharedPreferences
+  // is AndroidX's own AES-backed fallback and doesn't hit the same issue.
+  static const _secureStorage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
+
+  // ── "Remember me" saved login credentials ───────────────────────────────
+  //
+  // Requested explicitly for the login screen's "تذكرني" checkbox: unlike
+  // the refresh-token session restore above (which never touches the
+  // password), this persists the raw email/password so the login form can
+  // repopulate itself. Still routed through flutter_secure_storage (Android
+  // Keystore / EncryptedSharedPreferences, iOS Keychain) rather than plain
+  // SharedPreferences, but a stored, reusable password is inherently more
+  // exposed than a revocable refresh token — kept as an additive UX layer on
+  // top of the token-based restore, not a replacement for it.
+  static const _kSavedEmail = 'saved_email';
+  static const _kSavedPassword = 'saved_password';
+  static const _kRememberMe = 'remember_me';
+
+  static Future<bool> getRememberMe() async {
+    try {
+      return (await _secureStorage.read(key: _kRememberMe)) == 'true';
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.getRememberMe failed: $e');
+      return false;
+    }
+  }
+
+  /// Returns (email, password) if "remember me" was on and both are stored,
+  /// else null.
+  static Future<(String, String)?> getSavedCredentials() async {
+    try {
+      if (!await getRememberMe()) return null;
+      final email = await _secureStorage.read(key: _kSavedEmail);
+      final password = await _secureStorage.read(key: _kSavedPassword);
+      if (email == null || password == null) return null;
+      return (email, password);
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.getSavedCredentials failed: $e');
+      return null;
+    }
+  }
+
+  static Future<void> saveCredentials(String email, String password) async {
+    try {
+      await _secureStorage.write(key: _kSavedEmail, value: email);
+      await _secureStorage.write(key: _kSavedPassword, value: password);
+      await _secureStorage.write(key: _kRememberMe, value: 'true');
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.saveCredentials failed: $e');
+    }
+  }
+
+  static Future<void> clearSavedCredentials() async {
+    try {
+      await _secureStorage.delete(key: _kSavedEmail);
+      await _secureStorage.delete(key: _kSavedPassword);
+      await _secureStorage.delete(key: _kRememberMe);
+    } catch (e) {
+      debugPrint('⚠️ AppPrefs.clearSavedCredentials failed: $e');
+    }
+  }
 
   // Wrapped in try/catch (unlike every other AppPrefs method) because a
   // native-side secure-storage failure — a corrupted Keystore entry, a

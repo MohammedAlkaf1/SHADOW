@@ -2,7 +2,6 @@ import 'dart:async';
 
 import '/a11y.dart';
 import '/pages/consent/consent_screen.dart';
-import '/flutter_flow/flutter_flow_icon_button.dart';
 import '/flutter_flow/flutter_flow_util.dart';
 import '/services/mentor_log.dart';
 import '/services/mentor_triggers.dart';
@@ -11,7 +10,6 @@ import '/student/student_profile.dart';
 import '/student/student_profile_provider.dart';
 import '/style/category_widgets.dart';
 import '/theme.dart';
-import 'dart:ui' as ui;
 import '/custom_code/actions/index.dart' as actions;
 import 'package:easy_localization/easy_localization.dart';
 import 'package:flutter/material.dart';
@@ -19,6 +17,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'visual_assistance_mode_model.dart';
 export 'visual_assistance_mode_model.dart';
+
+// Visual-only constants for this screen's redesign — screen-local per the
+// pattern established on the home / deaf-mode screens.
+const double _kPrimaryCardRadius = 24.0;
+const double _kEchoRadius = 24.0;
 
 class VisualAssistanceModeWidget extends StatefulWidget {
   const VisualAssistanceModeWidget({super.key});
@@ -147,33 +150,49 @@ class _VisualAssistanceModeWidgetState
                 children: [
                   Padding(
                     padding: const EdgeInsetsDirectional.fromSTEB(
-                        AppSpacing.lg, AppSpacing.md, AppSpacing.lg, AppSpacing.md),
+                        18.0, AppSpacing.md, 18.0, 14.8),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
+                        // Back button is rightmost per the Figma header
+                        // (node 386:131) — first in this RTL Row renders
+                        // at the row's start (right).
                         a11yButton(
                           label: 'common.back'.tr(),
-                          child: FlutterFlowIconButton(
-                            borderRadius: 8.0,
-                            buttonSize: 48.0,
-                            fillColor: Colors.transparent,
-                            icon: appBackIcon(context),
-                            onPressed: () async {
-                              context.pop();
-                            },
+                          child: Container(
+                            width: 44.0,
+                            height: 44.0,
+                            decoration: BoxDecoration(
+                              color: AppColors.surface,
+                              borderRadius: BorderRadius.circular(14.0),
+                              border: Border.all(color: AppColors.border, width: 0.8),
+                              boxShadow: EchoColors.shadow,
+                            ),
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              icon: appBackIcon(context, color: AppColors.mutedOnCream, size: 20.0),
+                              onPressed: () => context.pop(),
+                            ),
                           ),
                         ),
+                        const SizedBox(width: AppSpacing.md),
                         Expanded(
                           child: Text(
                             'visual.title'.tr(),
                             textAlign: TextAlign.start,
-                            style: AppText.title(),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppText.custom(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                                height: 1.45,
+                                color: AppColors.onCream),
                           ),
                         ),
-                      ].divide(const SizedBox(width: AppSpacing.sm)),
+                      ],
                     ),
                   ),
-                  Container(height: 1.0, color: AppColors.border),
+                  Container(height: 0.8, color: AppColors.border),
                 ],
               ),
             ),
@@ -185,107 +204,32 @@ class _VisualAssistanceModeWidgetState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Camera / image frame
-                        ClipRRect(
-                          borderRadius:
-                              BorderRadius.circular(AppSpacing.cardRadius),
-                          child: SizedBox(
-                            height: 300.0,
-                            child: Stack(
-                              alignment: AlignmentDirectional.center,
-                              children: [
-                                Positioned.fill(
-                                  child: _model.capturedImagePath != null
-                                      ? Image.memory(
-                                          _model.capturedImageBytes ??
-                                              Uint8List(0),
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, __, ___) =>
-                                              _cameraEmptyState(),
-                                        )
-                                      : _cameraEmptyState(),
-                                ),
-                                // Framing guide
-                                Padding(
-                                  padding: const EdgeInsets.all(AppSpacing.xl),
-                                  child: Container(
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(
-                                          AppSpacing.cardRadius),
-                                      border: Border.all(
-                                        color: AppColors.onNavy
-                                            .withValues(alpha: 0.3),
-                                        width: 2.0,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                // Scan line (accent) when idle
-                                if (!analyzing)
-                                  Align(
-                                    alignment:
-                                        const AlignmentDirectional(0.0, -0.5),
-                                    child: Container(
-                                      height: 2.0,
-                                      color: AppColors.terracotta,
-                                    ),
-                                  ),
-                                // Loading overlay
-                                if (analyzing)
-                                  Positioned.fill(
-                                    child: Container(
-                                      color: AppColors.navy
-                                          .withValues(alpha: 0.6),
-                                      alignment: Alignment.center,
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          CircularProgressIndicator(
-                                              color: AppColors.terracotta),
-                                          const SizedBox(height: AppSpacing.md),
-                                          Text('visual.analyzing'.tr(),
-                                              style: AppText.body(
-                                                  color: AppColors.onNavy)),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                // Status chip
-                                Align(
-                                  alignment:
-                                      const AlignmentDirectional(0.0, -1.0),
-                                  child: Padding(
-                                    padding:
-                                        const EdgeInsets.all(AppSpacing.md),
-                                    child: _imageStatusChip(analyzing),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        // Result
-                        if (_model.analysisResult != null && !analyzing) ...[
-                          const SizedBox(height: AppSpacing.md),
-                          _resultCard(),
-                        ],
+                        _primaryCameraCard(analyzing),
                         const SizedBox(height: AppSpacing.lg),
                         _actionsSection(analyzing),
-                        const SizedBox(height: AppSpacing.md),
-                        // Instruction
-                        Row(
-                          children: [
-                            Icon(Icons.info_outline_rounded,
-                                size: 20.0, color: AppColors.mutedOnCream),
-                            const SizedBox(width: AppSpacing.sm),
-                            Expanded(
-                              child: Text(
-                                'visual.instruction'.tr(),
-                                textAlign: TextAlign.start,
-                                style: AppText.label(),
-                              ),
+                        // Result
+                        AnimatedSwitcher(
+                          duration: const Duration(milliseconds: 320),
+                          transitionBuilder: (child, animation) =>
+                              FadeTransition(
+                            opacity: animation,
+                            child: SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0, 0.02),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: child,
                             ),
-                          ],
+                          ),
+                          child: (_model.analysisResult != null && !analyzing)
+                              ? Padding(
+                                  key: const ValueKey('result'),
+                                  padding: const EdgeInsets.only(
+                                      top: AppSpacing.md),
+                                  child: _resultCard(),
+                                )
+                              : const SizedBox.shrink(
+                                  key: ValueKey('no-result')),
                         ),
                         const SizedBox(height: AppSpacing.md),
                       ],
@@ -300,135 +244,281 @@ class _VisualAssistanceModeWidgetState
       );
   }
 
-  /// Both action cards side by side normally. Neurodevelopmental / mild
-  /// cognitive support (hidesSecondaryActions): only "صف المحيط" (the
-  /// primary action) stays visible directly; "اقرأ النص" moves behind a
-  /// quiet "خيارات" toggle.
-  Widget _actionsSection(bool analyzing) {
-    final tooltips = StudentProfile.current.showsPermanentTooltips;
-    final describeCard = _actionCard(
-      icon: Icons.visibility_rounded,
-      label: 'visual.describeAction'.tr(),
-      enabled: !analyzing,
-      onTap: () => _captureAndAnalyze('describe'),
-      caption: tooltips ? 'visual.describeCaption'.tr() : null,
-    );
-    final readTextCard = _actionCard(
-      icon: Icons.text_fields_rounded,
-      label: 'visual.readTextAction'.tr(),
-      enabled: !analyzing,
-      onTap: () => _captureAndAnalyze('read_text'),
-      caption: tooltips ? 'visual.readTextCaption'.tr() : null,
-    );
-
-    if (StudentProfile.current.hidesSecondaryActions) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+  /// The camera/echo primary card: just the camera frame itself — a
+  /// captured image when one exists, or an idle hint (generic camera
+  /// glyph) otherwise — with the loading overlay preserved for the
+  /// analyzing state. Figma (node 386:131) has no "جاهز"/"Ready" status
+  /// chip here — the loading overlay's own "جارٍ التحليل" text already
+  /// covers that state, so the chip was redundant and is dropped to match.
+  Widget _primaryCameraCard(bool analyzing) {
+    return Padding(
+      padding: const EdgeInsetsDirectional.only(bottom: 10.0),
+      child: Stack(
+        clipBehavior: Clip.none,
         children: [
-          describeCard,
-          const SizedBox(height: AppSpacing.md),
-          CollapsibleSecondaryActions(hidden: true, secondary: readTextCard),
-        ],
-      );
-    }
-
-    // IntrinsicHeight gives the stretched Row a bounded height inside the
-    // scroll view (equal-height cards) — plain stretch here forces infinite
-    // height.
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Expanded(child: describeCard),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(child: readTextCard),
+          PositionedDirectional(
+            top: 16.0,
+            bottom: -10.0,
+            start: 16.0,
+            end: -8.0,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: EchoColors.echo,
+                borderRadius: BorderRadius.circular(_kEchoRadius),
+              ),
+            ),
+          ),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16.8),
+            decoration: BoxDecoration(
+              color: EchoColors.primaryBg,
+              borderRadius: BorderRadius.circular(_kPrimaryCardRadius),
+              border: Border.all(color: EchoColors.primaryBg),
+              boxShadow: EchoColors.primaryShadow,
+            ),
+            child: _cameraFrame(analyzing),
+          ),
         ],
       ),
     );
   }
 
-  Widget _cameraEmptyState() {
-    return Container(
-      color: AppColors.navy,
-      alignment: Alignment.center,
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.lg),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  Widget _cameraFrame(bool analyzing) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18.0),
+      child: Container(
+        height: 230.0,
+        width: double.infinity,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18.0),
+          border: Border.all(color: EchoColors.primaryWave),
+        ),
+        child: Stack(
+          alignment: Alignment.center,
           children: [
-            Icon(Icons.photo_camera_rounded,
-                size: 48.0, color: AppColors.onNavy.withValues(alpha: 0.7)),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'visual.cameraEmptyState'.tr(),
-              textAlign: TextAlign.center,
-              style: AppText.label(color: AppColors.mutedOnNavy),
+            Positioned.fill(
+              child: _model.capturedImagePath != null
+                  ? Image.memory(
+                      _model.capturedImageBytes ?? Uint8List(0),
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _cameraHint(),
+                    )
+                  : _cameraHint(),
             ),
+            // Loading overlay
+            if (analyzing)
+              Positioned.fill(
+                child: Container(
+                  color: EchoColors.primaryBg.withValues(alpha: 0.75),
+                  alignment: Alignment.center,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(color: AppColors.terracotta),
+                      const SizedBox(height: AppSpacing.md),
+                      Text('visual.analyzing'.tr(),
+                          style: AppText.body(color: EchoColors.primaryText)),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _imageStatusChip(bool analyzing) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(AppSpacing.pill),
-      child: BackdropFilter(
-        filter: ui.ImageFilter.blur(sigmaX: 10.0, sigmaY: 10.0),
+  /// Idle-state hint shown before any image is captured: just a centered
+  /// camera glyph — matches Figma (node 386:131) exactly, which drops the
+  /// hatch background and hint caption this used to show.
+  Widget _cameraHint() {
+    return DecoratedBox(
+      decoration: const BoxDecoration(color: Colors.transparent),
+      child: Center(
+        child: Icon(Icons.photo_camera_outlined, size: 42.0, color: EchoColors.primaryWave),
+      ),
+    );
+  }
+
+  /// Primary CTA ("صف المحيط") in terracotta, and the secondary "اقرأ النص
+  /// المطبوع" button below it. Neurodevelopmental / mild cognitive support
+  /// (hidesSecondaryActions): only the primary action stays directly
+  /// visible; the secondary one moves behind a quiet "خيارات" toggle.
+  Widget _actionsSection(bool analyzing) {
+    final describeButton = _primaryActionButton(analyzing: analyzing);
+    final readTextButton = _secondaryActionButton(analyzing: analyzing);
+
+    if (StudentProfile.current.hidesSecondaryActions) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          describeButton,
+          const SizedBox(height: AppSpacing.sm),
+          CollapsibleSecondaryActions(hidden: true, secondary: readTextButton),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        describeButton,
+        const SizedBox(height: AppSpacing.sm),
+        readTextButton,
+      ],
+    );
+  }
+
+  Widget _primaryActionButton({required bool analyzing}) {
+    final tooltips = StudentProfile.current.showsPermanentTooltips;
+    final button = a11yButton(
+      enabled: !analyzing,
+      label: 'visual.describeAction'.tr(),
+      child: Opacity(
+        opacity: analyzing ? 0.5 : 1.0,
         child: Container(
-          padding: const EdgeInsets.symmetric(
-              horizontal: AppSpacing.md, vertical: AppSpacing.sm),
           decoration: BoxDecoration(
-            color: AppColors.navy.withValues(alpha: 0.55),
-            borderRadius: BorderRadius.circular(AppSpacing.pill),
+            borderRadius: BorderRadius.circular(20.0),
+            boxShadow: [
+              BoxShadow(
+                color: AppColors.terracotta.withValues(alpha: 0.6),
+                blurRadius: 11.0,
+                offset: const Offset(0, 10.0),
+              ),
+            ],
           ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 8.0,
-                height: 8.0,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color:
-                      analyzing ? AppColors.terracotta : AppColors.onNavy,
+          child: Material(
+            color: AppColors.terracotta,
+            borderRadius: BorderRadius.circular(20.0),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: analyzing ? null : () => _captureAndAnalyze('describe'),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 76.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.lg, vertical: 18.0),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Text first (start/right), icon last (end/left) —
+                    // matches Figma (node 386:131) exactly.
+                    Text('visual.describeAction'.tr(),
+                        textAlign: TextAlign.start,
+                        style: AppText.custom(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w800,
+                            height: 1.4,
+                            color: const Color(0xFFF7F3EC))),
+                    const SizedBox(width: AppSpacing.md),
+                    Container(
+                      width: 42.0,
+                      height: 42.0,
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        shape: BoxShape.circle,
+                      ),
+                      alignment: Alignment.center,
+                      child: Icon(Icons.volume_up_rounded,
+                          color: AppColors.terracotta, size: 21.0),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Text(
-                  analyzing
-                      ? 'visual.statusAnalyzing'.tr()
-                      : 'visual.statusReady'.tr(),
-                  style: AppText.label(color: AppColors.onNavy)),
-            ],
+            ),
           ),
         ),
       ),
+    );
+    if (!tooltips) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [button, permanentCaption('visual.describeCaption'.tr())],
+    );
+  }
+
+  Widget _secondaryActionButton({required bool analyzing}) {
+    final tooltips = StudentProfile.current.showsPermanentTooltips;
+    final button = a11yButton(
+      enabled: !analyzing,
+      label: 'visual.readTextAction'.tr(),
+      child: Opacity(
+        opacity: analyzing ? 0.5 : 1.0,
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20.0),
+            border: Border.all(color: AppColors.border, width: 0.8),
+            boxShadow: EchoColors.shadow,
+          ),
+          child: Material(
+            type: MaterialType.transparency,
+            borderRadius: BorderRadius.circular(20.0),
+            clipBehavior: Clip.antiAlias,
+            child: InkWell(
+              onTap: analyzing ? null : () => _captureAndAnalyze('read_text'),
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 60.0),
+                padding: const EdgeInsets.symmetric(horizontal: 18.8),
+                alignment: Alignment.center,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Text first (start/right), icon last (end/left) —
+                    // matches Figma (node 386:131) exactly.
+                    Text('visual.readTextAction'.tr(),
+                        textAlign: TextAlign.start,
+                        style: AppText.custom(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            height: 1.3,
+                            color: AppColors.onCream)),
+                    const SizedBox(width: AppSpacing.md),
+                    Icon(Icons.subject_rounded, size: 22.0, color: AppColors.navy),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    if (!tooltips) return button;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [button, permanentCaption('visual.readTextCaption'.tr())],
     );
   }
 
   Widget _resultCard() {
     return Container(
-      decoration: AppDecor.creamCard(),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
+        border: Border.all(color: AppColors.border),
+        boxShadow: EchoColors.shadow,
+      ),
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Text('visual.resultTitle'.tr(), style: AppText.body(color: AppColors.onCream)),
-                const SizedBox(width: AppSpacing.sm),
-                Icon(Icons.auto_awesome_rounded,
-                    color: AppColors.terracotta, size: 18.0),
-              ],
-            ),
+            Text('visual.resultTitle'.tr(),
+                style: AppText.custom(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w700,
+                    height: 1.4,
+                    color: AppColors.mutedOnCream)),
             const SizedBox(height: AppSpacing.sm),
             a11yLive(Text(
               _model.analysisResult!,
               textAlign: TextAlign.start,
-              style: AppText.body(),
+              style: AppText.custom(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w500,
+                  height: 1.85,
+                  color: AppColors.onCream),
             )),
             const SizedBox(height: AppSpacing.md),
             Align(
@@ -474,60 +564,6 @@ class _VisualAssistanceModeWidgetState
           ],
         ),
       ),
-    );
-  }
-
-  /// [caption] (mild-cognitive support) renders as a permanent label under
-  /// the card, outside its navy background — not a hover/long-press tooltip.
-  Widget _actionCard({
-    required IconData icon,
-    required String label,
-    required bool enabled,
-    required VoidCallback onTap,
-    String? caption,
-  }) {
-    final card = a11yButton(
-      enabled: enabled,
-      child: Opacity(
-        opacity: enabled ? 1.0 : 0.5,
-        child: Material(
-          color: AppColors.navy,
-          borderRadius: BorderRadius.circular(AppSpacing.cardRadius),
-          clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: enabled ? onTap : null,
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                  vertical: AppSpacing.lg, horizontal: AppSpacing.md),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: 56.0,
-                    height: 56.0,
-                    decoration: BoxDecoration(
-                        color: AppColors.surface, shape: BoxShape.circle),
-                    alignment: Alignment.center,
-                    child: Icon(icon, color: AppColors.navy, size: 28.0),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    style: AppText.cardTitle(),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-    if (caption == null) return card;
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [card, permanentCaption(caption)],
     );
   }
 }

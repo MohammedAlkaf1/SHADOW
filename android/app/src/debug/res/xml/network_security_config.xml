@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  DEBUG BUILDS ONLY. This file lives under android/app/src/debug/ (not
+  src/main/), so Gradle only merges it into debug builds — release builds
+  never see it and stay on the default HTTPS-only network security policy.
+
+  Android 9+ (API 28+) blocks cleartext (plain HTTP) network connections by
+  default for any app that doesn't explicitly opt in — this is why
+  http://192.168.x.x:3000 works from Chrome (which has its own, more
+  permissive cleartext handling) but fails from this Flutter app with
+  "تعذر الاتصال بالمنصة" while developing against a local Next.js server
+  that isn't served over HTTPS.
+
+  This exists purely so `flutter run` (debug) can reach a local dev server
+  over plain HTTP on the same Wi-Fi network. The real platform in
+  production is always HTTPS, so release builds must never carry this.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true" />
+</network-security-config>

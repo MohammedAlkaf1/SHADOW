@@ -34,6 +34,11 @@ Thumbs.db
 # === Local agent settings (contain local machine paths) ===
 .claude/settings.local.json
 
+# === QA/session scratch output — device screenshots, not app source.
+# May capture real backend session data (account emails, course/session
+# content) — never commit. ===
+scratch_shots/
+
 # === Android ===
 android/.gradle/
 android/local.properties

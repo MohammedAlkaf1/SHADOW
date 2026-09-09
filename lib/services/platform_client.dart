@@ -23,6 +23,7 @@ import 'package:http/http.dart' as http;
 
 import 'app_prefs.dart';
 import 'adaptation_directives.dart';
+import 'exam_models.dart';
 
 /// `--dart-define-from-file=env.json` value, defaulting to the local dev
 /// server. See env.example.json / README.
@@ -125,7 +126,9 @@ class PlatformClient {
 
       if (response.statusCode != 200) {
         return PlatformResult.failure(_extractError(
-            response, 'تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.'));
+            response,
+            _bi('تعذر تسجيل الدخول. تحقق من البريد الإلكتروني وكلمة المرور.',
+                'Sign-in failed. Check your email and password.')));
       }
 
       final body = jsonDecode(utf8.decode(response.bodyBytes))
@@ -148,8 +151,9 @@ class PlatformClient {
       return const PlatformResult.success(null);
     } catch (e) {
       debugPrint('⚠️ PlatformClient.login failed: $e');
-      return const PlatformResult.failure(
-          'تعذر الاتصال بالمنصة. تحقق من اتصالك بالإنترنت.');
+      return PlatformResult.failure(_bi(
+          'تعذر الاتصال بالمنصة. تحقق من اتصالك بالإنترنت.',
+          'Couldn\'t reach the platform. Check your internet connection.'));
     }
   }
 
@@ -245,14 +249,16 @@ class PlatformClient {
       }
     }
 
-    return const PlatformResult.failure(
-        'تعذر جلب بيانات الملف الشخصي من المنصة، ولا توجد نسخة محفوظة سابقاً.');
+    return PlatformResult.failure(_bi(
+        'تعذر جلب بيانات الملف الشخصي من المنصة، ولا توجد نسخة محفوظة سابقاً.',
+        'Couldn\'t fetch your profile from the platform, and no cached copy exists.'));
   }
 
   static Future<PlatformResult<Map<String, dynamic>>> getSupportPlan() async {
     final json = await _authedGet('/student/support-plan');
     if (json == null) {
-      return const PlatformResult.failure('تعذر جلب خطة الدعم من المنصة.');
+      return PlatformResult.failure(
+          _bi('تعذر جلب خطة الدعم من المنصة.', 'Couldn\'t fetch your support plan from the platform.'));
     }
     return PlatformResult.success(json);
   }
@@ -337,6 +343,159 @@ class PlatformClient {
     _flushTimer = null;
   }
 
+  // ── Voice-driven exam-taking (physical/motor-impairment mode) ───────
+  //
+  // Talks to the platform's exam feature (docs/API.md): GET /student/exams
+  // (list), GET /exams/:id/questions (full question set, one call), POST
+  // /exams/:id/answers (one MCQ answer + optional voice-confirmation audio),
+  // POST /tts/generate (server-side Gemini TTS proxy — the app never calls
+  // Gemini directly, see that route's own doc comment on why). Unlike the
+  // profile/support-plan reads above, none of these fall back to a cache on
+  // failure — an exam in progress needs the caller to see the real error,
+  // not silently look like nothing happened.
+
+  // ── Course keyterms (deaf-mode Deepgram boosting) ────────────────────
+  //
+  // GET /student/courses lists the distinct course codes the student is
+  // enrolled in (see FacultyCourseLink — there's no separate Course
+  // entity, a course is just a code string). GET /courses/:courseCode/
+  // keyterms returns that course's faculty-approved lecture keyterms, sent
+  // to Deepgram as a `keyterm` boost-list for the live transcription
+  // session — see transcription_mobile.dart.
+
+  /// Distinct course codes the calling student is linked to.
+  static Future<PlatformResult<List<String>>> getStudentCourses() async {
+    final json = await _authedGet('/student/courses');
+    if (json == null) {
+      return PlatformResult.failure(
+          _bi('تعذر جلب قائمة المقررات من المنصة.', 'Couldn\'t fetch your course list from the platform.'));
+    }
+    final courses = (json['courses'] as List? ?? [])
+        .map((c) => (c as Map<String, dynamic>)['courseCode'] as String)
+        .toList();
+    return PlatformResult.success(courses);
+  }
+
+  /// Approved lecture keyterms for [courseCode] — empty (never an error the
+  /// caller needs to surface) when the faculty member hasn't uploaded/
+  /// approved any yet.
+  static Future<PlatformResult<List<String>>> getCourseKeyterms(
+      String courseCode) async {
+    final json = await _authedGet('/courses/$courseCode/keyterms');
+    if (json == null) {
+      return PlatformResult.failure(_bi(
+          'تعذر جلب مصطلحات المقرر من المنصة.', 'Couldn\'t fetch the course keyterms from the platform.'));
+    }
+    final terms =
+        (json['terms'] as List? ?? []).map((t) => t as String).toList();
+    return PlatformResult.success(terms);
+  }
+
+  /// Lists exams the student is enrolled in and currently published for.
+  static Future<PlatformResult<List<ExamSummary>>> getAvailableExams() async {
+    final json = await _authedGet('/student/exams');
+    if (json == null) {
+      return PlatformResult.failure(
+          _bi('تعذر جلب قائمة الاختبارات من المنصة.', 'Couldn\'t fetch the exam list from the platform.'));
+    }
+    final list = (json['exams'] as List? ?? [])
+        .map((e) => ExamSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return PlatformResult.success(list);
+  }
+
+  /// Fetches every question (with options, never `isCorrect`) for one exam.
+  static Future<PlatformResult<ExamDetail>> getExamQuestions(String examId) async {
+    final json = await _authedGet('/exams/$examId/questions');
+    if (json == null) {
+      return PlatformResult.failure(_bi(
+          'تعذر جلب أسئلة الاختبار من المنصة.', 'Couldn\'t fetch the exam questions from the platform.'));
+    }
+    try {
+      return PlatformResult.success(ExamDetail.fromJson(json));
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient.getExamQuestions: failed to parse response: $e');
+      return PlatformResult.failure(
+          _bi('تعذر قراءة بيانات الاختبار.', 'Couldn\'t read the exam data.'));
+    }
+  }
+
+  /// Fetches the student's own result for one exam, gated server-side on
+  /// the faculty's Exam.showResultsToStudents opt-in — see that route's doc
+  /// comment. Called once, right after the "تم التسليم" screen.
+  static Future<PlatformResult<ExamResult>> getExamResult(String examId) async {
+    final json = await _authedGet('/exams/$examId/my-result');
+    if (json == null) {
+      return PlatformResult.failure(
+          _bi('تعذر جلب النتيجة من المنصة.', 'Couldn\'t fetch your result from the platform.'));
+    }
+    try {
+      return PlatformResult.success(ExamResult.fromJson(json));
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient.getExamResult: failed to parse response: $e');
+      return PlatformResult.failure(
+          _bi('تعذر قراءة بيانات النتيجة.', 'Couldn\'t read the result data.'));
+    }
+  }
+
+  /// Submits (or re-submits) the student's chosen option for one question,
+  /// with the spoken confirmation clip ("فهمت: ... — صحيح؟" → "نعم") as
+  /// optional multipart audio — matches the field name/shape the platform's
+  /// POST /api/exams/:id/answers route expects exactly (multipart/form-data:
+  /// questionId, selectedOptionId, voiceConfirmationAudio).
+  static Future<PlatformResult<void>> submitExamAnswer({
+    required String examId,
+    required String questionId,
+    required String selectedOptionId,
+    Uint8List? confirmationAudioWav,
+  }) async {
+    final token = _accessToken;
+    if (token == null) {
+      return PlatformResult.failure(_bi('يجب تسجيل الدخول أولاً.', 'You must sign in first.'));
+    }
+
+    Future<http.StreamedResponse> send() async {
+      final request = http.MultipartRequest('POST', _uri('/exams/$examId/answers'))
+        ..headers['Authorization'] = 'Bearer $token'
+        ..fields['questionId'] = questionId
+        ..fields['selectedOptionId'] = selectedOptionId;
+      if (confirmationAudioWav != null) {
+        debugPrint('🔊 PlatformClient.submitExamAnswer: attaching '
+            '${confirmationAudioWav.length}-byte voiceConfirmationAudio');
+        request.files.add(http.MultipartFile.fromBytes(
+          'voiceConfirmationAudio',
+          confirmationAudioWav,
+          filename: 'confirmation.wav',
+        ));
+      } else {
+        debugPrint('🔊 PlatformClient.submitExamAnswer: no audio clip to attach');
+      }
+      return request.send();
+    }
+
+    try {
+      var streamed = await send().timeout(const Duration(seconds: 20));
+      if (streamed.statusCode == 401) {
+        final refreshed = await refreshToken();
+        if (!refreshed) {
+          return PlatformResult.failure(_bi(
+              'انتهت الجلسة، الرجاء تسجيل الدخول مرة أخرى.', 'Your session expired — please sign in again.'));
+        }
+        streamed = await send().timeout(const Duration(seconds: 20));
+      }
+      final response = await http.Response.fromStream(streamed);
+      if (response.statusCode != 201 && response.statusCode != 200) {
+        return PlatformResult.failure(_extractError(
+            response, _bi('تعذر إرسال الإجابة، حاول مرة أخرى.', 'Couldn\'t submit your answer — try again.')));
+      }
+      return const PlatformResult.success(null);
+    } catch (e) {
+      debugPrint('⚠️ PlatformClient.submitExamAnswer failed: $e');
+      return PlatformResult.failure(_bi(
+          'تعذر الاتصال بالمنصة لإرسال الإجابة.', 'Couldn\'t reach the platform to submit your answer.'));
+    }
+  }
+
   // ── Internal helpers ─────────────────────────────────────────────────
 
   /// GETs an authenticated endpoint, transparently retrying once after a
@@ -368,6 +527,15 @@ class PlatformClient {
       return null;
     }
   }
+
+  /// Picks the Arabic or English copy of an error message based on the
+  /// student's current app-language setting (AppPrefs.currentAppLanguage —
+  /// synchronous, no BuildContext needed here, unlike screens that use
+  /// easy_localization's `.tr()`). Every user-facing error string in this
+  /// file goes through this so an English-locale student never sees
+  /// Arabic-only error text.
+  static String _bi(String ar, String en) =>
+      AppPrefs.currentAppLanguage == 'en' ? en : ar;
 
   static String _extractError(http.Response response, String fallback) {
     try {
