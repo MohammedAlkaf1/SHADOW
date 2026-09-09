@@ -297,6 +297,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         onTap: openAppSettings,
                       ),
                     ]),
+                    const SizedBox(height: 26.0),
+                    _sectionLabel('settings.legal'.tr()),
+                    _card([
+                      _chevronRow(
+                        title: 'settings.privacyPolicy'.tr(),
+                        onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const PrivacyPolicyScreen())),
+                      ),
+                    ]),
                     if (_loggedIn) ...[
                       const SizedBox(height: 26.0),
                       _signOutRow(),

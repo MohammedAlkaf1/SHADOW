@@ -32,6 +32,36 @@ const String kPlatformBaseUrl = String.fromEnvironment(
   defaultValue: 'http://localhost:3000/api',
 );
 
+/// True if [kPlatformBaseUrl] is a dev/tunnel endpoint (localhost, LAN IP,
+/// or an ngrok tunnel) rather than a real production host. Checked at
+/// startup in release builds — see [assertProductionEndpointInRelease] —
+/// so a release APK can never silently ship pointed at a throwaway ngrok
+/// URL or a developer's laptop.
+bool get isDevPlatformEndpoint {
+  final url = kPlatformBaseUrl.toLowerCase();
+  return url.contains('ngrok') ||
+      url.contains('localhost') ||
+      url.contains('127.0.0.1') ||
+      url.contains('10.0.2.2') || // Android emulator host alias
+      !url.startsWith('https://');
+}
+
+/// Fails fast in release builds if [kPlatformBaseUrl] is not a real HTTPS
+/// production endpoint, instead of the app silently running against a dev
+/// tunnel or localhost. Debug/profile builds are unaffected. See
+/// docs/RELEASE_SIGNING.md's sibling doc, README's "Production
+/// configuration" section, for how PLATFORM_BASE_URL is meant to be set.
+void assertProductionEndpointInRelease() {
+  if (!kReleaseMode) return;
+  if (isDevPlatformEndpoint) {
+    throw StateError(
+      'Release build is configured with a non-production PLATFORM_BASE_URL '
+      '($kPlatformBaseUrl). Set a real HTTPS production API endpoint in '
+      'env.json before building a release artifact.',
+    );
+  }
+}
+
 /// Generic success/failure result — mirrors AiResult's shape in
 /// ai_client.dart so callers across the app follow one convention.
 class PlatformResult<T> {

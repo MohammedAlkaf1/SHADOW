@@ -52,6 +52,7 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget>
     with SingleTickerProviderStateMixin {
   late WelcomeSelectionModel _model;
   final scaffoldKey = GlobalKey<ScaffoldState>();
+  String? _savedEmail;
 
   // shfade: whole screen fades/slides in once on first build.
   late final AnimationController _entrance;
@@ -83,6 +84,10 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget>
     // Silent: weekly usage report + 14-day missed-lectures check
     // (moderate/intensive only). Never shown to the student.
     MentorTriggers.onAppOpen();
+
+    AppPrefs.getSavedCredentials().then((creds) {
+      if (mounted && creds != null) setState(() => _savedEmail = creds.$1);
+    });
   }
 
   @override
@@ -127,6 +132,8 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget>
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   _header(),
+                  const SizedBox(height: AppSpacing.lg),
+                  _greeting(),
                   const SizedBox(height: AppSpacing.md),
                   _primaryDeafCard(),
                   const SizedBox(height: _kHeroToGridGap),
@@ -242,6 +249,19 @@ class _WelcomeSelectionWidgetState extends State<WelcomeSelectionWidget>
         ),
       ],
     );
+  }
+
+  /// Welcome line under the header, above the hero card — "Hello, {name}".
+  /// The name has no real student-directory source, so it's derived from
+  /// the remembered login email (same fallback pattern as the profile and
+  /// settings screens); falls back to the app title if nothing is saved yet
+  /// (e.g. first launch before AppPrefs.getSavedCredentials resolves).
+  Widget _greeting() {
+    final name = _savedEmail?.split('@').first ?? 'app.title'.tr();
+    return Text('home.greeting'.tr(args: [name]),
+        textAlign: TextAlign.start,
+        style: AppText.custom(
+            fontSize: 15, fontWeight: FontWeight.w600, height: 1.4, color: AppColors.mutedOnCream));
   }
 
   Widget _headerCircleButton({required IconData icon, required VoidCallback onTap}) {

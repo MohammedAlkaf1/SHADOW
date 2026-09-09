@@ -57,6 +57,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 20.0),
                     _sectionLabel('profile.academicData'.tr()),
                     _card([
+                      // Real: derived from the remembered login email — no
+                      // student-directory API exists to fetch an actual name.
+                      _row(
+                          value: _savedEmail?.split('@').first ?? 'app.title'.tr(),
+                          label: 'profile.studentName'.tr()),
                       // Placeholder — no student-directory data source yet.
                       _row(value: '2021104', label: 'profile.studentId'.tr()),
                       _row(value: 'profile.universityValue'.tr(), label: 'profile.university'.tr()),
@@ -167,7 +172,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _sectionLabel(String text) => Padding(
         padding: const EdgeInsets.fromLTRB(4.0, 0, 4.0, 8.0),
         child: Text(text,
-            textAlign: TextAlign.end,
+            textAlign: TextAlign.start,
             style: AppText.custom(
                 fontSize: 12, fontWeight: FontWeight.w700, height: 1.3, color: AppColors.mutedOnCream)),
       );

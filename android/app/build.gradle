@@ -29,9 +29,14 @@ if (flutterVersionName == null) {
     flutterVersionName = '1.0'
 }
 
+// Release signing: see android/key.properties.example and
+// docs/RELEASE_SIGNING.md. key.properties is git-ignored and must be
+// created locally (or injected in CI) before a release build can run —
+// this is intentional so a real production keystore is never committed.
 def keystoreProperties = new Properties()
 def keystorePropertiesFile = rootProject.file('key.properties')
-if (keystorePropertiesFile.exists()) {
+def keystorePropertiesExist = keystorePropertiesFile.exists()
+if (keystorePropertiesExist) {
     keystoreProperties.load(new FileInputStream(keystorePropertiesFile))
 }
 
@@ -70,18 +75,31 @@ android {
 
    signingConfigs {
        release {
-           keyAlias keystoreProperties['keyAlias']
-           keyPassword keystoreProperties['keyPassword']
-           storeFile keystoreProperties['storeFile'] ? file(keystoreProperties['storeFile']) : null
-           storePassword keystoreProperties['storePassword']
+           if (keystorePropertiesExist) {
+               keyAlias keystoreProperties['keyAlias']
+               keyPassword keystoreProperties['keyPassword']
+               storeFile file(keystoreProperties['storeFile'])
+               storePassword keystoreProperties['storePassword']
+           }
        }
    }
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig signingConfigs.debug
+            // Release builds MUST be signed with a real release keystore
+            // (android/key.properties, git-ignored — see
+            // android/key.properties.example and docs/RELEASE_SIGNING.md).
+            // Deliberately NOT falling back to signingConfigs.debug: a release
+            // APK/AAB signed with the debug key must never be distributed, and
+            // failing loudly here beats shipping one by accident.
+            if (!keystorePropertiesExist) {
+                throw new GradleException(
+                    "Release build requires android/key.properties (git-ignored). " +
+                    "Copy android/key.properties.example, point it at a real release " +
+                    "keystore, and see docs/RELEASE_SIGNING.md."
+                )
+            }
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }

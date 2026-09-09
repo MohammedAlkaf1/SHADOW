@@ -10,6 +10,7 @@ import 'flutter_flow/flutter_flow_util.dart';
 import 'flutter_flow/nav/nav.dart';
 import 'index.dart';
 import 'services/app_prefs.dart';
+import 'services/platform_client.dart' show assertProductionEndpointInRelease;
 import 'student/student_profile_provider.dart';
 import 'theme.dart' show AppColors;
 
@@ -17,6 +18,9 @@ const List<Locale> kSupportedLocales = [Locale('ar'), Locale('en')];
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // Fails fast (before any network call) if a release build was compiled
+  // pointed at a dev/ngrok backend instead of a real production endpoint.
+  assertProductionEndpointInRelease();
   GoRouter.optionURLReflectsImperativeAPIs = true;
   usePathUrlStrategy();
   await EasyLocalization.ensureInitialized();

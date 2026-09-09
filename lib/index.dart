@@ -3,6 +3,7 @@ export '/pages/splash_screen/splash_screen_widget.dart'
     show SplashScreenWidget;
 export '/pages/login/login_widget.dart' show LoginWidget;
 export '/pages/settings/settings_screen.dart' show SettingsScreen;
+export '/pages/settings/privacy_policy_screen.dart' show PrivacyPolicyScreen;
 export '/pages/deaf_mode_transcription/deaf_mode_transcription_widget.dart'
     show DeafModeTranscriptionWidget;
 export '/pages/learning_support_mode/learning_support_mode_widget.dart'

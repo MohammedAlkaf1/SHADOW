@@ -83,6 +83,11 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           path: SettingsScreen.routePath,
           builder: (context, params) => const SettingsScreen(),
         ),
+        FFRoute(
+          name: PrivacyPolicyScreen.routeName,
+          path: PrivacyPolicyScreen.routePath,
+          builder: (context, params) => const PrivacyPolicyScreen(),
+        ),
       ].map((r) => r.toRoute(appStateNotifier)).toList(),
     );
 
